@@ -14,6 +14,8 @@
 <link rel="preconnect" href="https://f.vimeocdn.com">
 <link rel="dns-prefetch" href="https://player.vimeo.com">
 
+<script src="https://player.vimeo.com/api/player.js"></script>
+
 <style>
   :root{
     /* Base spacing + responsive type */
@@ -46,32 +48,21 @@
   /* Wrapper around all media layers for unified transforms */
   #mediaWrap{ position:absolute; inset:0; }
 
-  /* Media layers - unified defaults */
-  #bg, #bgNext, #bgVideo, #bgVimeo { position:absolute; inset:0; display:block; }
+  /* Layers */
+  .slide{position:absolute; inset:0; display:block; opacity:0; background:#000;}
+  #imgA,#imgB{width:100%; height:100%; object-fit:cover; object-position:center;}
+  #imgA.show,#imgB.show{opacity:1; transition:opacity 300ms ease;}
 
-  #bg, #bgNext, #bgVideo { width:100%; height:100%; object-fit:cover; object-position:center; background:#000; }
-  #bg      { z-index:0; opacity:1;  transition:none !important; }
-  #bgNext  { z-index:2; opacity:0;  transition:opacity 260ms ease; will-change:opacity; backface-visibility:hidden; transform:translateZ(0); }
-  #bgVideo { z-index:1; opacity:0;  transition:none !important; }
-
-  /* Full-bleed cover for Vimeo iframe */
-  #bgVimeo{
-    position:absolute; top:50%; left:50%;
-    width:100vw; height:56.25vw;       /* 16:9 base */
-    min-width:177.78vh; min-height:100vh; /* expand when viewport is taller */
-    transform:translate(-50%,-50%);
-    pointer-events:none; border:0; display:block;
-    z-index:1; transition:none !important;
+  /* Vimeo: true cover (16:9) and no pointer events */
+  #vimeo{
+    pointer-events:none; border:0;
+    top:50%; left:50%; width:100vw; height:56.25vw; min-width:177.78vh; min-height:100vh;
+    transform:translate(-50%,-50%); opacity:0; transition:none;
   }
 
   main{ overflow:hidden; } html,body,main{ height:100%; }
   
-  /* Nudge and slight overscan for non–16:9 video to avoid bottom seam */
-  #bgVideo.video-adjust{
-    transform: translateY(-10px) scale(1.02);
-    transform-origin: center center;
-    will-change: transform;
-  }
+
   
 
 
@@ -222,10 +213,9 @@
 <!-- Media stage -->
 <div id="stage" aria-live="polite">
   <div id="mediaWrap">
-    <img id="bg" class="layer" alt="">
-    <img id="bgNext" class="layer" alt="">
-    <video id="bgVideo" class="layer" autoplay muted playsinline loop></video>
-    <iframe id="bgVimeo" class="layer" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
+    <img  id="imgA" class="slide" alt="">
+    <img  id="imgB" class="slide" alt="">
+    <iframe id="vimeo" class="slide video" title="Vimeo player" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
   </div>
 </div>
 
@@ -310,156 +300,102 @@ const slides = [
   { type:'image', src:'images/014.jpg', caption:'Project Fourteen — short description, year.' },
   { type:'image', src:'images/015.jpg', caption:'Project Fifteen — short description, year.' },
 ];
-// Randomize order each load
-const RANDOMIZE = true;
+// --- timing & state ---
+const FADE = 300;
+let isTransitioning = false, queuedDelta = 0, idx = 0;
+const buf = [document.getElementById('imgA'), document.getElementById('imgB')];
+let active = 0; // 0 or 1
+const vimeoFrame = document.getElementById('vimeo');
+let vimeoPlayer = null;
 
-/* ---------- DOM ---------- */
+// DOM elements
 const stage = document.getElementById('stage');
-const bg     = document.getElementById('bg');
-const bgNext = document.getElementById('bgNext');
-const bgVideo= document.getElementById('bgVideo');
-const bgVimeo = document.getElementById('bgVimeo');
 const captionEl = document.getElementById('caption');
 const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
 
-/* ---------- Helpers ---------- */
-function preload(src){
-  return new Promise(res => { const i=new Image(); i.onload=res; i.src=src; });
-}
+// helper: parse ID from 'https://player.vimeo.com/video/12345?...'
+const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1] : null; };
+
+// helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
-/* ---------- State ---------- */
-let index = 0;
-let isTransitioning = false;
-let queuedDelta = 0;
-const FADE_MS = 260;
-const T = (typeof FADE_MS === 'number' ? FADE_MS : 260);
+function requestNav(d){ if(isTransitioning){ queuedDelta=d; return; } go(d); }
+function finish(){ isTransitioning=false; if(queuedDelta){ const d=queuedDelta; queuedDelta=0; go(d); } }
 
-function go(delta) {
-  show(index + delta);
+function go(d){
+  const n = (idx + d + slides.length) % slides.length;
+  show(n);
 }
 
-function requestNav(delta){
-  if (isTransitioning){ queuedDelta = delta; return; } // last intent wins
-  go(delta);
+function hideVimeo(){
+  vimeoFrame.style.opacity = 0;
+  try { vimeoPlayer && vimeoPlayer.pause(); } catch {}
 }
 
-function finishTransition(){
-  isTransitioning = false;
-  if (queuedDelta){
-    const d = queuedDelta; queuedDelta = 0;
-    go(d); // immediately go to the queued direction
-  }
-}
-
-// absolute safety net: never stay locked forever
-function armFallbackUnlock(delay = T + 600){
-  const token = Symbol();
-  finishTransition._token = token;
-  setTimeout(() => { if (finishTransition._token === token) finishTransition(); }, delay);
-}
- 
-
-/* ---------- Init ---------- */
-if (RANDOMIZE){
-  // Fisher–Yates shuffle
-  for (let i = slides.length - 1; i > 0; i--){
-    const j = (Math.random()* (i+1)) | 0;
-    [slides[i], slides[j]] = [slides[j], slides[i]];
-  }
-  // Ensure the first slide is an image (not a video)
-  if (slides[0] && slides[0].type !== 'image'){
-    const firstImgIdx = slides.findIndex(s => s.type === 'image');
-    if (firstImgIdx > 0){
-      [slides[0], slides[firstImgIdx]] = [slides[firstImgIdx], slides[0]];
-    }
-  }
-}
-bgVideo.muted = true;
-bgVideo.setAttribute('playsinline','');
-
-/* ---------- Phone portrait media rotation toggle ---------- */
-const mqRotate = window.matchMedia('(max-width: 768px) and (orientation: portrait) and (hover: none) and (pointer: coarse)');
-function applyRotateFlag(){
-  document.body.classList.toggle('rotate-media', mqRotate.matches);
-}
-mqRotate.addEventListener?.('change', applyRotateFlag);
-window.addEventListener('resize', applyRotateFlag);
-applyRotateFlag();
-
- 
-
-/* ---------- Core show() ---------- */
-async function show(i){
-  if (isTransitioning) return;
+function show(i){
+  if(isTransitioning) return;
   isTransitioning = true;
-
-  index = (i + slides.length) % slides.length;
-  const cur = slides[index];
+  idx = i;
+  const cur = slides[i];
   setCaption(cur.caption || '');
 
-  if (cur.type === 'vimeo') {
-    if (isTransitioning) return;
-    isTransitioning = true;
-
-    // keep the base image visible under the video; clear HTML5 <video>
-    try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-
-    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
-    bgVimeo.style.opacity = 0;          // start hidden
-    try { bgVimeo.removeAttribute('src'); } catch {}
-    void bgVimeo.offsetWidth;           // hard reset
-
-    let revealed = false;
-    const reveal = () => {
-      if (revealed) return;
-      revealed = true;
-      bgVimeo.style.opacity = 1;        // fade video on top of the image
-      finishTransition();
-    };
-    // reveal when player frame loads…
-    bgVimeo.addEventListener('load', reveal, { once:true });
-    // …or after a small fallback delay (covers rare 'load' misses / cache hits)
-    setTimeout(reveal, 800);
-
-    bgVimeo.src = u;
-    return;
-  }
-
-
-
-  if (cur.type === 'image') {
-    const nextSrc = cur.src;
-    const img = new Image();
-    img.src = nextSrc;
-    const ready = img.decode
-      ? img.decode().catch(()=>{})
-      : new Promise(res => { if (img.complete) res(); else img.onload = () => res(); });
-
-    Promise.resolve(ready).then(() => {
-      requestAnimationFrame(() => {
-        bgNext.style.transition = 'none';
-        bgNext.style.opacity = 0;
-        bgNext.src = nextSrc;
-        requestAnimationFrame(() => {
-          bgNext.style.transition = 'opacity 260ms ease';
-          bgNext.style.opacity = 1;
-          setTimeout(() => {
-            bg.src = nextSrc;
-            bgNext.style.opacity = 0;
-            requestAnimationFrame(() => { bgNext.src = ''; });
-            try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
-            try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-            finishTransition();
-          }, 260);
-        });
+  if(cur.type === 'vimeo'){
+    // keep current image visible; bring video above when ready
+    const id = vimeoId(cur.url);
+    if(!id){ finish(); return; }
+    if(!vimeoPlayer){
+      vimeoPlayer = new Vimeo.Player(vimeoFrame, {
+        id, background: true, autoplay: true, muted: true, loop: true, dnt: true, autopause: false, playsinline: true
       });
-    });
+    } else {
+      vimeoPlayer.loadVideo(id).catch(()=>{});
+      vimeoPlayer.setMuted(true); vimeoPlayer.setLoop(true); vimeoPlayer.play().catch(()=>{});
+    }
+    // reveal when iframe is ready (with small fallback)
+    let shown=false;
+    const reveal=()=>{ if(shown) return; shown=true; vimeoFrame.style.opacity = 1; finish(); };
+    vimeoFrame.addEventListener('load', reveal, {once:true});
+    setTimeout(reveal, 900);
     return;
   }
+
+  // image path: load into the hidden buffer, then crossfade
+  hideVimeo(); // ensure video not visible for images
+  const next = buf[1 - active];
+  const img = new Image();
+  img.src = cur.src;
+  const ready = img.decode ? img.decode().catch(()=>{}) :
+                new Promise(res => { if(img.complete) res(); else img.onload = () => res(); });
+  Promise.resolve(ready).then(()=>{
+    // stage next image
+    next.classList.remove('show');
+    next.src = cur.src;
+    // commit on next 2 frames so CSS sees 0 -> 1 change
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+      next.classList.add('show');
+      setTimeout(()=>{
+        // hide old buffer and swap
+        buf[active].classList.remove('show');
+        active = 1 - active;
+        finish();
+      }, FADE);
+    });});
+  });
 }
+
+// init: show first slide without animation
+(function init(){
+  const first = slides[idx];
+  if(first.type==='vimeo'){ show(idx); }
+  else {
+    buf[active].src = first.src;
+    buf[active].classList.add('show');
+  }
+})();
+
+
 
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
 // Arrow follows the mouse; no pointer lock so you can leave the page freely
@@ -519,25 +455,7 @@ stage.addEventListener('touchend', (e)=>{
   startX=null;
 }, {passive:true});
 
-/* ---------- Kick off ---------- */
-(function boot(){
-  // Seed first slide without preview
-  const first = slides[0];
-  if (first.type === 'vimeo'){
-    bgVimeo.style.opacity = 0;
-    const u = first.url + (first.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
-    bgVimeo.src = u;
-    bgVimeo.style.opacity = 1;
-  }else if (first.type === 'video'){
-    bgVideo.src = first.src; bgVideo.load();
-    bgVideo.play().catch(()=>{}); bgVideo.style.opacity = 1;
-  }else{
-    bg.src = first.src; bg.style.opacity = 1;
-    bgVideo.style.opacity = 0;
-  }
-  setCaption(first.caption || '');
-  index = 0;
-})();
+
 </script>
 </body>
 </html>
