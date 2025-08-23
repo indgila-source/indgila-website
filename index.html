@@ -48,10 +48,32 @@
 
   /* Media layers - unified defaults */
   #bg, #bgNext, #bgVideo, #bgVimeo { position:absolute; inset:0; display:block; }
-  #bg      { opacity:1;  z-index:0; transition:none !important; }
-  #bgVideo { opacity:0;  z-index:1; transition:none !important; }
-  #bgVimeo { opacity:0;  z-index:1; pointer-events:none; transition:none !important; }
-  #bgNext  { opacity:0;  z-index:2; transition:opacity 260ms ease; will-change:opacity; backface-visibility:hidden; transform:translateZ(0); width:100%; height:100%; object-fit:cover; object-position:center; background:#000; }
+
+  /* Base image (no animation), full-bleed cover */
+  #bg{
+    opacity:1; z-index:0; transition:none !important;
+    width:100%; height:100%;
+    object-fit:cover; object-position:center; background:#000;
+  }
+
+  /* HTML5 video layer (no animation), full-bleed cover too */
+  #bgVideo{
+    opacity:0; z-index:1; transition:none !important;
+    width:100%; height:100%;
+    object-fit:cover; object-position:center; background:#000;
+  }
+
+  /* Vimeo uses the special 16:9 cover rules you already have; keep as-is */
+  #bgVimeo{ opacity:0; z-index:1; pointer-events:none; transition:none !important; }
+
+  /* Cross-fade image (only layer that animates) */
+  #bgNext{
+    opacity:0; z-index:2; transition:opacity 260ms ease;
+    width:100%; height:100%;
+    object-fit:cover; object-position:center; background:#000;
+    will-change:opacity; backface-visibility:hidden; transform:translateZ(0);
+  }
+
   main{ overflow:hidden; } html,body,main{ height:100%; }
   
   /* Nudge and slight overscan for non–16:9 video to avoid bottom seam */
@@ -420,7 +442,6 @@ async function show(i){
 
 
   if (cur.type === 'image') {
-    // assume isTransitioning was set to true at the top of show(i)
     const nextSrc = cur.src;
     const img = new Image();
     img.src = nextSrc;
@@ -429,23 +450,21 @@ async function show(i){
       : new Promise(res => { if (img.complete) res(); else img.onload = () => res(); });
 
     Promise.resolve(ready).then(() => {
-      // Stage the crossfade on the next TWO frames to guarantee the CSS transition triggers
       requestAnimationFrame(() => {
-        bgNext.style.transition = 'none';     // start from a known state
-        bgNext.style.opacity = 0;             // ensure it's at 0 before swapping src
-        bgNext.src = nextSrc;                 // set the new image on the top layer
+        bgNext.style.transition = 'none';
+        bgNext.style.opacity = 0;
+        bgNext.src = nextSrc;
         requestAnimationFrame(() => {
           bgNext.style.transition = 'opacity 260ms ease';
-          bgNext.style.opacity = 1;           // fade in
+          bgNext.style.opacity = 1;
           setTimeout(() => {
-            bg.src = nextSrc;                 // commit to base after fade
-            bgNext.style.opacity = 0;         // hide the top layer
-            requestAnimationFrame(() => { bgNext.src = ''; }); // clear to prevent future ghosts
-            // now that the image is on screen, clear video/vimeo layers
+            bg.src = nextSrc;
+            bgNext.style.opacity = 0;
+            requestAnimationFrame(() => { bgNext.src = ''; });
             try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
             try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-            finishTransition();                // unlock nav; queued clicks will run
-          }, 260); // keep this in sync with the CSS transition
+            finishTransition();
+          }, 260);
         });
       });
     });
