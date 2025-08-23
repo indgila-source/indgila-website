@@ -49,29 +49,19 @@
   /* Media layers - unified defaults */
   #bg, #bgNext, #bgVideo, #bgVimeo { position:absolute; inset:0; display:block; }
 
-  /* Base image (no animation), full-bleed cover */
-  #bg{
-    opacity:1; z-index:0; transition:none !important;
-    width:100%; height:100%;
-    object-fit:cover; object-position:center; background:#000;
-  }
+  #bg, #bgNext, #bgVideo { width:100%; height:100%; object-fit:cover; object-position:center; background:#000; }
+  #bg      { z-index:0; opacity:1;  transition:none !important; }
+  #bgNext  { z-index:2; opacity:0;  transition:opacity 260ms ease; will-change:opacity; backface-visibility:hidden; transform:translateZ(0); }
+  #bgVideo { z-index:1; opacity:0;  transition:none !important; }
 
-  /* HTML5 video layer (no animation), full-bleed cover too */
-  #bgVideo{
-    opacity:0; z-index:1; transition:none !important;
-    width:100%; height:100%;
-    object-fit:cover; object-position:center; background:#000;
-  }
-
-  /* Vimeo uses the special 16:9 cover rules you already have; keep as-is */
-  #bgVimeo{ opacity:0; z-index:1; pointer-events:none; transition:none !important; }
-
-  /* Cross-fade image (only layer that animates) */
-  #bgNext{
-    opacity:0; z-index:2; transition:opacity 260ms ease;
-    width:100%; height:100%;
-    object-fit:cover; object-position:center; background:#000;
-    will-change:opacity; backface-visibility:hidden; transform:translateZ(0);
+  /* Full-bleed cover for Vimeo iframe */
+  #bgVimeo{
+    position:absolute; top:50%; left:50%;
+    width:100vw; height:56.25vw;       /* 16:9 base */
+    min-width:177.78vh; min-height:100vh; /* expand when viewport is taller */
+    transform:translate(-50%,-50%);
+    pointer-events:none; border:0; display:block;
+    z-index:1; transition:none !important;
   }
 
   main{ overflow:hidden; } html,body,main{ height:100%; }
@@ -83,14 +73,7 @@
     will-change: transform;
   }
   
-  /* Full-bleed 16:9 cover for Vimeo iframe */
-  #bgVimeo{
-    position:absolute; top:50%; left:50%;
-    width:100vw; height:56.25vw;      /* 16:9 cover */
-    min-width:177.78vh; min-height:100vh;
-    transform:translate(-50%,-50%);
-    pointer-events:none; border:0; display:block;
-  }
+
 
   /* Bottom UI: name left, caption center, email right */
   .intro-left,.caption,.intro-right{
@@ -419,22 +402,29 @@ async function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
+    if (isTransitioning) return;
+    isTransitioning = true;
 
-    // ensure HTML5 video layer is cleared; keep base image visible underneath
+    // keep the base image visible under the video; clear HTML5 <video>
     try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
 
-    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
-    // hard reset iframe so it truly reloads
-    bgVimeo.style.opacity = 0;
+    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&loop=1&dnt=1';
+    bgVimeo.style.opacity = 0;          // start hidden
     try { bgVimeo.removeAttribute('src'); } catch {}
-    void bgVimeo.offsetWidth; // reflow
+    void bgVimeo.offsetWidth;           // hard reset
 
-    const onLoad = () => {
-      bgVimeo.removeEventListener('load', onLoad);
-      bgVimeo.style.opacity = 1;     // reveal only when ready
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      bgVimeo.style.opacity = 1;        // fade video on top of the image
       finishTransition();
     };
-    bgVimeo.addEventListener('load', onLoad, { once:true });
+    // reveal when player frame loads…
+    bgVimeo.addEventListener('load', reveal, { once:true });
+    // …or after a small fallback delay (covers rare 'load' misses / cache hits)
+    setTimeout(reveal, 800);
+
     bgVimeo.src = u;
     return;
   }
