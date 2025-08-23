@@ -46,31 +46,20 @@
   /* Wrapper around all media layers for unified transforms */
   #mediaWrap{ position:absolute; inset:0; }
 
-  /* Media layers (two images + one video) */
-  .layer{
-    position:absolute; inset:0; width:100%; height:100%;
-    object-fit:cover; object-position:center;
-    transition:opacity .6s ease;
-    opacity:0;
-    will-change:opacity;
-    background:#000;
-  }
+  /* Media layers - unified defaults */
+  #bg, #bgNext, #bgVideo, #bgVimeo { position:absolute; inset:0; }
+  #bg      { opacity:1;  z-index:0; }
+  #bgVideo { opacity:0;  z-index:1; }
+  #bgVimeo { opacity:0;  z-index:1; }
+  #bgNext  { opacity:0;  z-index:2; }
+  .layer   { transition: opacity 260ms ease; will-change: opacity; backface-visibility:hidden; transform:translateZ(0); width:100%; height:100%; object-fit:cover; object-position:center; background:#000; }
+  
   /* Nudge and slight overscan for non–16:9 video to avoid bottom seam */
   #bgVideo.video-adjust{
     transform: translateY(-10px) scale(1.02);
     transform-origin: center center;
     will-change: transform;
   }
-  #bg { opacity:1; }          /* under layer (current) */
-  #bgNext { opacity:0; }      /* crossfade layer */
-  #bgVideo { opacity:0; }     /* video layer */
-  
-  /* always-on stack order */
-  #bg        { z-index: 0; }
-  #bgVideo,
-  #bgVimeo   { z-index: 1; }
-  #bgNext    { z-index: 2; }          /* crossfade sits on top */
-  .layer     { transition: opacity 260ms ease; will-change: opacity; }
   
   /* Full-bleed 16:9 cover for Vimeo iframe */
   #bgVimeo{
@@ -382,7 +371,6 @@ async function show(i){
 
   if (cur.type === 'vimeo') {
     // keep current visual (image or video) visible until the iframe is ready
-    bgNext.style.opacity = 0; bgNext.src = '';
     try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
 
     const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
@@ -405,25 +393,32 @@ async function show(i){
 
   if (cur.type === 'image') {
     const nextSrc = cur.src;
-    // 1) Preload the image first
+    // block re-entry during transition
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    // 1) preload + decode fully to avoid flicker
     const tmp = new Image();
     tmp.src = nextSrc;
-    tmp.onload = () => {
-      // 2) Crossfade using the top layer (keep current video/Vimeo visible underneath until fade completes)
-     bgNext.src = nextSrc;
-      bgNext.style.opacity = 1;
+    const ready = tmp.decode ? tmp.decode().catch(()=>{}) : Promise.resolve();
 
-      // 3) After the fade, commit and clear OTHER layers
-      setTimeout(() => {
-        bg.src = nextSrc;                 // commit to base
-        bgNext.style.opacity = 0;
-        bgNext.src = '';                  // IMPORTANT: prevents later bleed-through
-        // now that the new image is on screen, clear video/Vimeo layers
-        try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
-        try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-        isTransitioning = false;
-      }, FADE_MS);
-    };
+    Promise.resolve(ready).then(() => {
+      // 2) stage the crossfade on the next animation frame
+      requestAnimationFrame(() => {
+        bgNext.src = nextSrc;
+        bgNext.style.opacity = 1;              // fade new image over the base
+        setTimeout(() => {
+          bg.src = nextSrc;                    // commit to base after fade
+          bgNext.style.opacity = 0;            // hide crossfade layer
+          // IMPORTANT: clear src after opacity is 0 to prevent later "ghosts"
+          requestAnimationFrame(() => { bgNext.src = ''; });
+          // now that the new image is visible, fully clear video layers
+          try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
+          try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
+          isTransitioning = false;
+        }, FADE_MS);
+      });
+    });
     return;
   }
 }
@@ -441,7 +436,7 @@ stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { document.body.classList.add('cursor-hidden'); });
 stage.addEventListener('mouseleave', () => { document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity = 0; });
 stage.addEventListener('click', (e) => {
-  if (window.isTransitioning) return;
+  if (isTransitioning) return;
   const right = e.clientX > innerWidth/2;
   show(index + (right ? 1 : -1));
 });
