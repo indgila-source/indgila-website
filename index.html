@@ -20,7 +20,7 @@
   }
 
   html,body{
-    margin:0; padding:0; height:100%; background:#000;
+    margin:0; padding:0; height:100%; background:#000; overflow:hidden;
     font-family: "Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   }
 
@@ -57,7 +57,16 @@
   #bg { opacity:1; }          /* under layer (current) */
   #bgNext { opacity:0; }      /* crossfade layer */
   #bgVideo { opacity:0; }     /* video layer */
-  #bgVimeo { pointer-events: none; }  /* let your NEXT/PREV clicks pass through */
+  /* Full-bleed 16:9 cover for Vimeo iframe */
+  #bgVimeo{
+    position:absolute; top:50%; left:50%;
+    width:100vw;            /* base width */
+    height:56.25vw;         /* 9/16 of width */
+    min-width:177.78vh;     /* 16/9 of height */
+    min-height:100vh;       /* ensure full height */
+    transform:translate(-50%,-50%);
+    pointer-events:none; border:0; display:block;
+  }
 
   /* Bottom UI: name left, caption center, email right */
   .intro-left,.caption,.intro-right{
