@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Indgila Samad Ali</title>
+
+<!-- Optional: local font (preload will warn on file://; OK to ignore locally) -->
+<link rel="preload" href="fonts/Pragmatica_Book.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+  :root{ --edge:10px; --ui:12px; }
+
+  html,body{
+    margin:0; padding:0; height:100%; background:#000;
+    font-family: "Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Font face (works even if preload errors on file://) */
+  @font-face{
+    font-family:"Pragmatica";
+    src:url("fonts/Pragmatica_Book.woff2") format("woff2");
+    font-weight:400; font-style:normal; font-display:swap;
+  }
+
+  /* Stage */
+  #stage{
+    position:fixed; inset:0; overflow:hidden;
+    cursor:none; /* hide OS cursor on stage */
+  }
+
+  /* Media layers (two images + one video) */
+  .layer{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:center;
+    transition:opacity .6s ease;
+    opacity:0;
+    will-change:opacity;
+    background:#000;
+  }
+  #bg { opacity:1; }          /* under layer (current) */
+  #bgNext { opacity:0; }      /* crossfade layer */
+  #bgVideo { opacity:0; }     /* video layer */
+
+  /* Bottom UI: name left, caption center, email right */
+  .intro-left,.caption,.intro-right{
+    position:fixed; bottom:var(--edge); z-index:10;
+    font-size:var(--ui); line-height:1.2; letter-spacing:.02em; text-transform:uppercase;
+    color:#f2f2f2; text-shadow:0 1px 10px rgba(0,0,0,.45);
+    pointer-events:none;    /* don’t block stage mousemove */
+  }
+  .intro-left{ left:var(--edge); }
+  .caption{ left:50%; transform:translateX(-50%); }
+  .intro-right{ right:var(--edge); }
+  .intro-right a{ color:#f2f2f2; text-decoration:underline; pointer-events:auto; }
+
+  /* Custom cursor arrow */
+  #cursorArrow{
+    position:fixed; left:0; top:0; transform:translate(-50%,-50%);
+    pointer-events:none; z-index:999;
+    font-size:clamp(16px,2vw,28px); line-height:1; letter-spacing:.02em; color:#f2f2f2;
+    text-shadow:0 1px 10px rgba(0,0,0,.45);
+    opacity:0; transition:opacity .15s ease, transform .12s ease;
+  }
+  #cursorArrow.click-bump{ transform:translate(-50%,-50%) scale(1.35); }
+  @media (hover:none),(pointer:coarse){ #cursorArrow{ display:none !important; } }
+
+  /* Use a transparent cursor asset + none as fallback, and win with !important */
+  :root, html, body, #stage, #stage * {
+    cursor:
+      url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==') 0 0,
+      none !important;
+  }
+
+  /* Prevent text selection (avoids the text I-beam cursor entirely) */
+  html, body, #stage, #stage * { -webkit-user-select: none; user-select: none; }
+
+  /* Labels never block mousemove; the email stays clickable but still no OS cursor */
+  .intro-left, .caption, .intro-right { pointer-events: none; }
+  .intro-right a { pointer-events: auto; cursor:
+    url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==') 0 0,
+    none !important; }
+
+  /* Arrow stays on top */
+  #cursorArrow{
+    position: fixed; left:0; top:0; transform: translate(-50%,-50%);
+    pointer-events: none; z-index: 999;
+    font-size: clamp(16px,2vw,28px); line-height: 1; letter-spacing: .02em;
+    color: #f2f2f2; text-shadow: 0 1px 10px rgba(0,0,0,.45);
+    opacity: 0; transition: opacity .15s ease, transform .12s ease;
+  }
+  #cursorArrow.click-bump { transform: translate(-50%,-50%) scale(1.35); }
+
+  /* Touch devices: hide custom arrow */
+  @media (hover:none), (pointer:coarse){ #cursorArrow{ display:none !important; } }
+
+  /* Nuclear: hide pointer on EVERYTHING */
+  html, body, * {
+    cursor: none !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #cursorArrow {
+    position: fixed; left: 0; top: 0;
+    font-size: 28px; line-height: 1; color: #fff;
+    pointer-events: none; z-index: 99999; opacity: .9;
+    text-shadow: 0 0 14px rgba(0,0,0,.6);
+  }
+</style>
+</head>
+<body>
+
+<!-- Media stage -->
+<div id="stage" aria-live="polite">
+  <img id="bg" class="layer" alt="">
+  <img id="bgNext" class="layer" alt="">
+  <video id="bgVideo" class="layer" autoplay muted playsinline loop></video>
+</div>
+
+<!-- Bottom UI -->
+<div class="intro-left">Indgila Samad Ali</div>
+<div class="caption" id="caption">CAPTION FOR THE CURRENT IMAGE.</div>
+<div class="intro-right"><a href="mailto:info@indgila.com">info@indgila.com</a></div>
+
+<!-- Custom cursor -->
+<div id="cursorArrow" aria-hidden="true"></div>
+
+<script>
+/* ---------- Slides (5 images + 2 videos) ---------- */
+const slides = [
+  { type:'image', src:'images/01.jpg', caption:'Project One — short description, location, year.' },
+  { type:'image', src:'images/02.jpg', caption:'Project Two — short description, materials, year.' },
+  { type:'video', src:'videos/01.mp4', caption:'Video One — description, year.' },
+  { type:'image', src:'images/03.jpg', caption:'Project Three — short description, client, year.' },
+  { type:'image', src:'images/04.jpg', caption:'Project Four — short description, year.' },
+  { type:'video', src:'videos/02.mp4', caption:'Video Two — description, year.' },
+  { type:'image', src:'images/05.jpg', caption:'Project Five — short description, year.' },
+];
+// If you want random order, flip this to true
+const RANDOMIZE = false;
+
+/* ---------- DOM ---------- */
+const stage = document.getElementById('stage');
+const bg     = document.getElementById('bg');
+const bgNext = document.getElementById('bgNext');
+const bgVideo= document.getElementById('bgVideo');
+const captionEl = document.getElementById('caption');
+const cursorArrow = document.getElementById('cursorArrow');
+
+/* ---------- Helpers ---------- */
+function preload(src){
+  return new Promise(res => { const i=new Image(); i.onload=res; i.src=src; });
+}
+function setCaption(text){ captionEl.textContent = text || ''; }
+
+/* ---------- State ---------- */
+let index = 0;
+let isTransitioning = false;
+const FADE_MS = 600;
+
+/* ---------- Init ---------- */
+if (RANDOMIZE){
+  // Fisher–Yates shuffle
+  for (let i = slides.length - 1; i > 0; i--){
+    const j = (Math.random()* (i+1)) | 0;
+    [slides[i], slides[j]] = [slides[j], slides[i]];
+  }
+}
+bgVideo.muted = true;
+bgVideo.setAttribute('playsinline','');
+
+/* ---------- Core show() ---------- */
+async function show(i){
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  index = (i + slides.length) % slides.length;
+  const cur = slides[index];
+  setCaption(cur.caption || '');
+
+  if (cur.type === 'video'){
+    // prepare video on top, keep current bg under while it buffers
+    bgNext.style.opacity = 0;
+
+    // reset & set source
+    try{
+      bgVideo.pause();
+      bgVideo.removeAttribute('src'); bgVideo.load();
+      bgVideo.src = cur.src; bgVideo.load();
+    }catch{}
+
+    await new Promise(res=>{
+      if (bgVideo.readyState >= 3) return res();
+      const onReady = ()=>{ bgVideo.removeEventListener('canplay', onReady); res(); };
+      bgVideo.addEventListener('canplay', onReady, { once:true });
+      // safety timeout
+      setTimeout(res, 1200);
+    });
+
+    try{ bgVideo.currentTime = 0; bgVideo.play().catch(()=>{}); }catch{}
+    bgVideo.style.opacity = 1;       // fade video in
+    bgNext.style.opacity = 0;        // ensure crossfade img is hidden
+    setTimeout(()=>{ isTransitioning = false; }, FADE_MS+40);
+    return;
+  }
+
+  // IMAGE path — crossfade on top, then swap bg underneath
+  bgNext.style.opacity = 0;
+  bgNext.src = cur.src;
+  await preload(cur.src);
+  bgNext.style.opacity = 1;          // fade new image on top
+
+  setTimeout(()=>{
+    bg.src = cur.src;                // swap underneath
+    bgNext.style.opacity = 0;        // hide crossfade layer
+    // if video was showing, hide & reset it now (after fade)
+    bgVideo.style.opacity = 0;
+    try{
+      bgVideo.pause();
+      bgVideo.removeAttribute('src'); bgVideo.load();
+    }catch{}
+    isTransitioning = false;
+  }, FADE_MS);
+}
+
+/* ---------- Navigation (mouse, keyboard, touch) ---------- */
+// arrow follow (fallback, no pointer lock)
+let arrowFade;
+function updateCursor(e){
+  const right = e.clientX > innerWidth/2;
+  cursorArrow.textContent = right ? '>' : '<';
+  cursorArrow.style.left = e.clientX + 'px';
+  cursorArrow.style.top  = e.clientY + 'px';
+  cursorArrow.style.opacity = 1;
+  clearTimeout(arrowFade);
+  arrowFade = setTimeout(()=> cursorArrow.style.opacity = 0, 800);
+}
+stage.addEventListener('mousemove', updateCursor);
+stage.addEventListener('mouseleave', () => cursorArrow.style.opacity = 0);
+stage.addEventListener('click', (e) => {
+  if (window.isTransitioning) return;
+  const right = e.clientX > innerWidth/2;
+  show(index + (right ? 1 : -1));
+});
+
+// keyboard
+window.addEventListener('keydown', (e)=>{
+  if (isTransitioning) return;
+  if (e.key === 'ArrowRight') show(index+1);
+  if (e.key === 'ArrowLeft')  show(index-1);
+});
+
+// touch (swipe)
+let startX=null;
+stage.addEventListener('touchstart', (e)=>{ startX = e.touches?.[0]?.clientX ?? null; }, {passive:true});
+stage.addEventListener('touchend', (e)=>{
+  if (startX==null) return;
+  const endX = e.changedTouches?.[0]?.clientX ?? startX;
+  const dx = endX - startX;
+  if (Math.abs(dx) > 40) show(index + (dx<0 ? 1 : -1));
+  else show(index + (endX > window.innerWidth/2 ? 1 : -1));
+  startX=null;
+}, {passive:true});
+
+/* ---------- Kick off ---------- */
+(function boot(){
+  // Seed first slide without transition pop
+  const first = slides[0];
+  if (first.type === 'video'){
+    bgVideo.src = first.src; bgVideo.load();
+    bgVideo.play().catch(()=>{}); bgVideo.style.opacity = 1;
+  }else{
+    bg.src = first.src; bg.style.opacity = 1;
+  }
+  setCaption(first.caption || '');
+  index = 0;
+})();
+
+const cursorArrow = document.getElementById('cursorArrow');
+document.addEventListener('mousemove', e => {
+  cursorArrow.textContent = e.clientX > window.innerWidth/2 ? '>' : '<';
+  cursorArrow.style.left = e.clientX + 'px';
+  cursorArrow.style.top  = e.clientY + 'px';
+});
+</script>
+</body>
+</html>
