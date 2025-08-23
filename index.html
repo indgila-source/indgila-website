@@ -381,19 +381,19 @@ async function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    // keep the current base image visible while the iframe boots
+    // keep current visual (image or video) visible until the iframe is ready
     bgNext.style.opacity = 0; bgNext.src = '';
-    bgVideo.style.opacity = 0; try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
+    try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
 
-    // build URL and fully reset the iframe so it reloads reliably
     const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
+    // hard reset the iframe so it truly reloads
     bgVimeo.style.opacity = 0;
     try { bgVimeo.removeAttribute('src'); } catch {}
     void bgVimeo.offsetWidth; // reflow
 
     const onLoad = () => {
       bgVimeo.removeEventListener('load', onLoad);
-      bgVimeo.style.opacity = 1;        // fade the iframe in
+      bgVimeo.style.opacity = 1;   // reveal only when player is loaded
       isTransitioning = false;
     };
     bgVimeo.addEventListener('load', onLoad, { once: true });
@@ -401,57 +401,26 @@ async function show(i){
     return;
   }
 
-  if (cur.type === 'video'){
-    // Hide/reset Vimeo if it was active
-    bgVimeo.style.opacity = 0;
-    try { bgVimeo.removeAttribute('src'); } catch {}
-    bgNext.style.opacity = 0;  bgNext.src = '';
-    
-    // prepare video on top, keep current bg under while it buffers
-    bgNext.style.opacity = 0;
 
-    // reset & set source
-    try{
-      bgVideo.pause();
-      bgVideo.removeAttribute('src'); bgVideo.load();
-      bgVideo.src = cur.src; bgVideo.load();
-      // apply any per-video class adjustments
-      bgVideo.classList.remove('video-adjust');
-      if (cur.videoClass) bgVideo.classList.add(cur.videoClass);
-    }catch{}
-
-    await new Promise(res=>{
-      if (bgVideo.readyState >= 3) return res();
-      const onReady = ()=>{ bgVideo.removeEventListener('canplay', onReady); res(); };
-      bgVideo.addEventListener('canplay', onReady, { once:true });
-      // safety timeout
-      setTimeout(res, 1200);
-    });
-
-    try{ bgVideo.currentTime = 0; bgVideo.play().catch(()=>{}); }catch{}
-    bgVideo.style.opacity = 1;       // fade video in
-    bgNext.style.opacity = 0;        // ensure crossfade img is hidden
-    setTimeout(()=>{ isTransitioning = false; }, FADE_MS+40);
-    return;
-  }
 
   if (cur.type === 'image') {
-    // hide/clear video layers when entering image mode
-    bgVimeo.style.opacity = 0; try { bgVimeo.removeAttribute('src'); } catch {}
-    bgVideo.style.opacity = 0; try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-
     const nextSrc = cur.src;
+    // 1) Preload the image first
     const tmp = new Image();
     tmp.src = nextSrc;
     tmp.onload = () => {
-      // put the loaded image on the crossfade layer
-      bgNext.src = nextSrc;
+      // 2) Crossfade using the top layer (keep current video/Vimeo visible underneath until fade completes)
+     bgNext.src = nextSrc;
       bgNext.style.opacity = 1;
-      // after fade, lock it into the base layer and clear the crossfade
+
+      // 3) After the fade, commit and clear OTHER layers
       setTimeout(() => {
-        bg.src = nextSrc;
+        bg.src = nextSrc;                 // commit to base
         bgNext.style.opacity = 0;
-        bgNext.src = '';                    // IMPORTANT: prevents ghosting later
+        bgNext.src = '';                  // IMPORTANT: prevents later bleed-through
+        // now that the new image is on screen, clear video/Vimeo layers
+        try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
+        try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
         isTransitioning = false;
       }, FADE_MS);
     };
