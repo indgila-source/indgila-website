@@ -64,6 +64,14 @@
   #bg { opacity:1; }          /* under layer (current) */
   #bgNext { opacity:0; }      /* crossfade layer */
   #bgVideo { opacity:0; }     /* video layer */
+  
+  /* always-on stack order */
+  #bg        { z-index: 0; }
+  #bgVideo,
+  #bgVimeo   { z-index: 1; }
+  #bgNext    { z-index: 2; }          /* crossfade sits on top */
+  .layer     { transition: opacity 260ms ease; will-change: opacity; }
+  
   /* Full-bleed 16:9 cover for Vimeo iframe */
   #bgVimeo{
     position:absolute; top:50%; left:50%;
@@ -373,19 +381,19 @@ async function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    // keep previous image visible while Vimeo loads
-    bgNext.style.opacity = 1;
+    // keep the current base image visible while the iframe boots
+    bgNext.style.opacity = 0; bgNext.src = '';
+    bgVideo.style.opacity = 0; try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
+
+    // build URL and fully reset the iframe so it reloads reliably
+    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
     bgVimeo.style.opacity = 0;
-    try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
     try { bgVimeo.removeAttribute('src'); } catch {}
     void bgVimeo.offsetWidth; // reflow
 
-    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
-
     const onLoad = () => {
       bgVimeo.removeEventListener('load', onLoad);
-      bgVimeo.style.opacity = 1;
-      bgNext.style.opacity = 0;
+      bgVimeo.style.opacity = 1;        // fade the iframe in
       isTransitioning = false;
     };
     bgVimeo.addEventListener('load', onLoad, { once: true });
@@ -397,6 +405,7 @@ async function show(i){
     // Hide/reset Vimeo if it was active
     bgVimeo.style.opacity = 0;
     try { bgVimeo.removeAttribute('src'); } catch {}
+    bgNext.style.opacity = 0;  bgNext.src = '';
     
     // prepare video on top, keep current bg under while it buffers
     bgNext.style.opacity = 0;
@@ -426,27 +435,28 @@ async function show(i){
     return;
   }
 
-  // IMAGE path — crossfade on top, then swap bg underneath
-  // Hide/reset Vimeo if it was active
-  bgVimeo.style.opacity = 0;
-  try { bgVimeo.removeAttribute('src'); } catch {}
-  
-  bgNext.style.opacity = 0;
-  bgNext.src = cur.src;
-  await preload(cur.src);
-  bgNext.style.opacity = 1;          // fade new image on top
+  if (cur.type === 'image') {
+    // hide/clear video layers when entering image mode
+    bgVimeo.style.opacity = 0; try { bgVimeo.removeAttribute('src'); } catch {}
+    bgVideo.style.opacity = 0; try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
 
-  setTimeout(()=>{
-    bg.src = cur.src;                // swap underneath
-    bgNext.style.opacity = 0;        // hide crossfade layer
-    // if video was showing, hide & reset it now (after fade)
-    bgVideo.style.opacity = 0;
-    try{
-      bgVideo.pause();
-      bgVideo.removeAttribute('src'); bgVideo.load();
-    }catch{}
-    isTransitioning = false;
-  }, FADE_MS);
+    const nextSrc = cur.src;
+    const tmp = new Image();
+    tmp.src = nextSrc;
+    tmp.onload = () => {
+      // put the loaded image on the crossfade layer
+      bgNext.src = nextSrc;
+      bgNext.style.opacity = 1;
+      // after fade, lock it into the base layer and clear the crossfade
+      setTimeout(() => {
+        bg.src = nextSrc;
+        bgNext.style.opacity = 0;
+        bgNext.src = '';                    // IMPORTANT: prevents ghosting later
+        isTransitioning = false;
+      }, FADE_MS);
+    };
+    return;
+  }
 }
 
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
