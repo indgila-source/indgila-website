@@ -55,7 +55,7 @@
 
   /* Vimeo: true cover (16:9) and no pointer events */
   #vimeo{
-    pointer-events:none; border:0;
+    z-index:3; pointer-events:none; border:0;
     top:50%; left:50%; width:100vw; height:56.25vw; min-width:177.78vh; min-height:100vh;
     transform:translate(-50%,-50%); opacity:0; transition:none;
   }
@@ -341,23 +341,27 @@ function show(i){
   const cur = slides[i];
   setCaption(cur.caption || '');
 
-  if(cur.type === 'vimeo'){
-    // keep current image visible; bring video above when ready
-    const id = vimeoId(cur.url);
-    if(!id){ finish(); return; }
-    if(!vimeoPlayer){
-      vimeoPlayer = new Vimeo.Player(vimeoFrame, {
-        id, background: true, autoplay: true, muted: true, loop: true, dnt: true, autopause: false, playsinline: true
-      });
-    } else {
-      vimeoPlayer.loadVideo(id).catch(()=>{});
-      vimeoPlayer.setMuted(true); vimeoPlayer.setLoop(true); vimeoPlayer.play().catch(()=>{});
-    }
-    // reveal when iframe is ready (with small fallback)
-    let shown=false;
-    const reveal=()=>{ if(shown) return; shown=true; vimeoFrame.style.opacity = 1; finish(); };
-    vimeoFrame.addEventListener('load', reveal, {once:true});
-    setTimeout(reveal, 900);
+  if (cur.type === 'vimeo') {
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    // keep the current image visible; clear any HTML5 <video>
+    try { vimeoFrame.style.opacity = 0; } catch {}
+
+    // Build a URL that can autoplay everywhere
+    const base = cur.url; // e.g. https://player.vimeo.com/video/1112592340[?h=HASH]
+    const qs = new URLSearchParams({
+      background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
+    });
+    const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
+
+    // Reveal when the iframe finishes a real navigation (plus a small fallback)
+    let shown = false;
+    const reveal = () => { if (shown) return; shown = true; vimeoFrame.style.opacity = 1; finish(); };
+    vimeoFrame.removeAttribute('src');      // hard reset so 'load' will fire
+    vimeoFrame.addEventListener('load', reveal, { once: true });
+    setTimeout(reveal, 1200);               // safety for odd cache paths
+    vimeoFrame.src = url;                   // <-- actual navigation happens here
     return;
   }
 
