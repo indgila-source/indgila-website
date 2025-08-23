@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Indgila Samad Ali</title>
+
+<!-- Optional: local font (preload will warn on file://; OK to ignore locally) -->
+<link rel="preload" href="fonts/Pragmatica_Book.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+  :root{
+    /* Base spacing + responsive type */
+    --edge: 10px;
+    --ui: clamp(10px, 0.9rem + 0.2vw, 13px);
+
+    /* Safe-area helpers for iOS notches */
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top:    env(safe-area-inset-top, 0px);
+  }
+
+  html,body{
+    margin:0; padding:0; height:100%; background:#000;
+    font-family: "Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Font face (works even if preload errors on file://) */
+  @font-face{
+    font-family:"Pragmatica";
+    src:url("fonts/Pragmatica_Book.woff2") format("woff2");
+    font-weight:400; font-style:normal; font-display:swap;
+  }
+
+  /* Stage */
+  #stage{
+    position:fixed; inset:0; overflow:hidden;
+    cursor:none; /* hide OS cursor on stage */
+  }
+  /* Wrapper around all media layers for unified transforms */
+  #mediaWrap{ position:absolute; inset:0; }
+
+  /* Media layers (two images + one video) */
+  .layer{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:center;
+    transition:opacity .6s ease;
+    opacity:0;
+    will-change:opacity;
+    background:#000;
+  }
+  /* Nudge and slight overscan for non–16:9 video to avoid bottom seam */
+  #bgVideo.video-adjust{
+    transform: translateY(-10px) scale(1.02);
+    transform-origin: center center;
+    will-change: transform;
+  }
+  #bg { opacity:1; }          /* under layer (current) */
+  #bgNext { opacity:0; }      /* crossfade layer */
+  #bgVideo { opacity:0; }     /* video layer */
+
+  /* Bottom UI: name left, caption center, email right */
+  .intro-left,.caption,.intro-right{
+    position:fixed; bottom:calc(var(--edge) + var(--safe-bottom)); z-index:10;
+    font-size:var(--ui); line-height:1.2; letter-spacing:.02em; text-transform:uppercase;
+    color:#fff; mix-blend-mode:difference;
+    pointer-events:none;    /* don’t block stage mousemove */
+  }
+  .intro-left{ left:var(--edge); pointer-events:auto; cursor:pointer; }
+  .caption{
+    left:50%; transform:translateX(-50%);
+    max-width:min(90vw, 720px);
+    text-align:center;
+    white-space:normal;
+  }
+  .intro-right{ right:var(--edge); }
+  .intro-right a{ color:inherit; text-decoration:underline; pointer-events:auto; }
+
+  /* Custom cursor arrow */
+  #cursorArrow{
+    position:fixed; left:0; top:0; transform:translate(-50%,-50%);
+    pointer-events:none; z-index:999;
+    font-size:var(--ui); line-height:1; letter-spacing:.02em; color:#fff;
+    mix-blend-mode:difference;
+    opacity:0; transition:opacity .15s ease, transform .12s ease;
+  }
+  #cursorArrow.click-bump{ transform:translate(-50%,-50%) scale(1.35); }
+  @media (hover:none),(pointer:coarse){ #cursorArrow{ display:none !important; } }
+
+  /* Hide native cursor everywhere in the experience */
+  html, body, #stage, #stage *, .intro-left, .caption, .intro-right, .intro-right a {
+    cursor: none !important;
+  }
+
+  /* Prevent text selection (avoids the text I-beam cursor entirely) */
+  html, body, #stage, #stage * { -webkit-user-select: none; user-select: none; }
+
+  /* Labels never block mousemove; the email stays clickable */
+  .caption, .intro-right { pointer-events: none; }
+  .intro-right a { pointer-events: auto; }
+
+  /* (keep the earlier #cursorArrow block; remove this duplicate to avoid drift) */
+
+  /* About overlay */
+  #aboutOverlay{
+    position:fixed; inset:0; background:#000; color:#f2f2f2; z-index:1000; display:none;
+    overflow:auto; -webkit-overflow-scrolling: touch;
+    padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom));
+  }
+  body.show-about #aboutOverlay{ display:block; }
+  body.show-about #cursorArrow{ display:none !important; }
+  #aboutOverlay .col-left, #aboutOverlay .col-right{
+    position:fixed; top:calc(var(--edge) + var(--safe-top)); font-size:var(--ui); line-height:1.2; letter-spacing:.01em;
+    font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    text-transform:uppercase; mix-blend-mode:normal; max-width:420px;
+  }
+  #aboutOverlay .col-left{ left:var(--edge); max-width:420px; }
+  #aboutOverlay .col-right{ right:var(--edge); text-align:right; max-width:260px; line-height:1.2; }
+  #aboutOverlay .bottom-left, #aboutOverlay .bottom-right{
+    position:fixed; bottom:calc(var(--edge) + var(--safe-bottom)); z-index:1001;
+    font-size:var(--ui); line-height:1.2; letter-spacing:.02em; text-transform:uppercase;
+    color:#f2f2f2; mix-blend-mode:normal; pointer-events:auto;
+  }
+  #aboutOverlay .bottom-left{ left:var(--edge); }
+  #aboutOverlay .bottom-right{ right:var(--edge); }
+  #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
+  #aboutOverlay h4{ margin:16px 0 6px; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
+  #aboutOverlay .col-right h4:first-child{ margin-top:0; }
+  #aboutOverlay p{ margin:0 0 10px; }
+  #aboutOverlay ul{ list-style:none; padding:0; margin:0 0 12px; }
+  #aboutOverlay li{ margin:0 0 4px; }
+  /* Tighter item spacing on right column lists, keep spacing after titles via h4 margins */
+  #aboutOverlay .col-right ul li{ line-height:1.05; margin:0; }
+
+  /* Mobile adjustments */
+  @media (max-width: 768px){
+    /* Slightly larger tap targets and breathing room */
+    .intro-left, .intro-right, .caption{ line-height: 1.3; }
+    .intro-left{ left:12px; }
+    .intro-right{ right:12px; }
+    /* Mobile: move caption to top-left */
+    .caption{
+      top: calc(var(--edge) + var(--safe-top));
+      bottom: auto;
+      left: var(--edge);
+      right: auto;
+      transform: none;
+      text-align: left;
+      max-width: calc(100vw - 2 * var(--edge));
+      padding: 0 8px 0 0;
+    }
+
+    /* Stack overlay content and let it scroll */
+    #aboutOverlay .col-left,
+    #aboutOverlay .col-right{
+      position:static; max-width:none; text-align:left; margin: 0 0 20px 0;
+    }
+    #aboutOverlay .bottom-left,
+    #aboutOverlay .bottom-right{
+      position:sticky; bottom: calc(var(--edge) + var(--safe-bottom)); top: auto;
+    }
+    #aboutOverlay .bottom-right{ float:right; }
+
+    /* Media: default mobile behavior (letterboxed contain) */
+    .layer{ object-fit: contain; object-position: center center; background:#000; }
+
+    /* Phones in portrait: rotate a shared wrapper so media stays full-bleed;
+       Use dynamic viewport units + tiny overscan to avoid mid-screen seam */
+    body.rotate-media #mediaWrap{
+      inset: auto;
+      left: 50%;
+      top: 50%;
+      /* fallback using classic vh/vw with 2px overscan */
+      width: calc(100vh + 2px);
+      height: calc(100vw + 2px);
+      transform: translate(-50%, -50%) rotate(90deg) translateZ(0);
+      transform-origin: center center;
+      background:#000;
+      backface-visibility: hidden;
+      will-change: transform, opacity; /* ensure GPU compositing for fades */
+    }
+    /* Ensure media covers when rotated */
+    body.rotate-media .layer{ object-fit: cover; }
+    /* Prefer dynamic viewport units when supported (prevents address bar resize jump) */
+    @supports (height: 100dvh){
+      body.rotate-media #mediaWrap{
+        width: calc(100dvh + 2px);
+        height: calc(100dvw + 2px);
+      }
+    }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .layer{ transition: opacity .15s linear; }
+  }
+  
+  /* Hide native cursor when hovering the stage (toggled by JS) */
+  .cursor-hidden, .cursor-hidden * { cursor: none !important; }
+
+  
+</style>
+</head>
+<body>
+
+<!-- Media stage -->
+<div id="stage" aria-live="polite">
+  <div id="mediaWrap">
+    <img id="bg" class="layer" alt="">
+    <img id="bgNext" class="layer" alt="">
+    <video id="bgVideo" class="layer" autoplay muted playsinline loop></video>
+  </div>
+</div>
+
+<!-- Bottom UI -->
+<div class="intro-left">Indgila Samad Ali</div>
+<div class="caption" id="caption">CAPTION FOR THE CURRENT IMAGE.</div>
+<div class="intro-right"><a href="mailto:info@indgila.com">info@indgila.com</a></div>
+
+<!-- Custom cursor -->
+<div id="cursorArrow" aria-hidden="true"></div>
+
+<!-- About overlay -->
+<div id="aboutOverlay" hidden>
+  <div class="col-left">
+    <p>Indgila Samad Ali is Moscow born San Francisco based designer with Persian roots. Rooted in classic art education her work defines the unknown through graphic design, art direction, spatial design and symbolic systems.</p>
+    <p>Currently working at OpenAI.</p>
+    <p>Previously design director at COLLINS New York.</p>
+  </div>
+  <div class="col-right">
+    <h4>Selected clients:</h4>
+    <ul>
+      <li>Adidas</li>
+      <li>Lexus</li>
+      <li>Tinder</li>
+      <li>Nickelodeon</li>
+      <li>Miro</li>
+      <li>OpenAI</li>
+      <li>Pearson</li>
+      <li>Port Magazine</li>
+      <li>Muse Group</li>
+      <li>LinkedIn</li>
+    </ul>
+
+    <h4>Publications:</h4>
+    <ul>
+      <li>Brand Identity</li>
+      <li>It’s Nice That</li>
+      <li>Print Magazine</li>
+      <li>Design Week</li>
+      <li>FastCo</li>
+      <li>PORT Magazine (Print Issue)</li>
+    </ul>
+
+    <h4>Jury:</h4>
+    <ul>
+      <li>Art Directors Club New York Chairmen 2026</li>
+      <li>ADC Russia 2021</li>
+    </ul>
+
+    <h4>Awards:</h4>
+    <ul>
+      <li>D&amp;AD</li>
+      <li>Art Directors Club New York</li>
+      <li>Effie Awards</li>
+      <li>Red Dot Design Awards</li>
+    </ul>
+  </div>
+  <div class="bottom-left">INDGILA SAMAD ALI</div>
+  <div class="bottom-right"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
+</div>
+
+<script>
+/* ---------- Slides (15 images + 5 videos) ---------- */
+const slides = [
+  { type:'image', src:'images/01.jpg', caption:'Project One — short description, location, year.' },
+  { type:'image', src:'images/02.jpg', caption:'Project Two — short description, materials, year.' },
+  { type:'video', src:'videos/01.mp4', caption:'Video One — description, year.' },
+  { type:'image', src:'images/03.jpg', caption:'Project Three — short description, client, year.' },
+  { type:'image', src:'images/04.jpg', caption:'Project Four — short description, year.' },
+  { type:'video', src:'videos/02.mp4', caption:'Video Two — description, year.' },
+  { type:'image', src:'images/05.jpg', caption:'Project Five — short description, year.' },
+  { type:'image', src:'images/06.jpg', caption:'Project Six — short description, year.' },
+  { type:'image', src:'images/07.jpg', caption:'Project Seven — short description, year.' },
+  { type:'image', src:'images/08.jpg', caption:'Project Eight — short description, year.' },
+  { type:'image', src:'images/09.jpg', caption:'Project Nine — short description, year.' },
+  { type:'image', src:'images/010.jpg', caption:'Project Ten — short description, year.' },
+  { type:'image', src:'images/011.jpg', caption:'Project Eleven — short description, year.' },
+  { type:'image', src:'images/012.jpg', caption:'Project Twelve — short description, year.' },
+  { type:'image', src:'images/013.jpg', caption:'Project Thirteen — short description, year.' },
+  { type:'image', src:'images/014.jpg', caption:'Project Fourteen — short description, year.' },
+  { type:'image', src:'images/015.jpg', caption:'Project Fifteen — short description, year.' },
+  { type:'video', src:'videos/03.mp4', caption:'Video Three — description, year.' },
+  { type:'video', src:'videos/04.mp4', caption:'Video Four — description, year.', videoClass:'video-adjust' },
+  { type:'video', src:'videos/05.mp4', caption:'Video Five — description, year.' },
+];
+// Randomize order each load
+const RANDOMIZE = true;
+
+/* ---------- DOM ---------- */
+const stage = document.getElementById('stage');
+const bg     = document.getElementById('bg');
+const bgNext = document.getElementById('bgNext');
+const bgVideo= document.getElementById('bgVideo');
+const captionEl = document.getElementById('caption');
+const cursorArrow = document.getElementById('cursorArrow');
+const aboutOverlay = document.getElementById('aboutOverlay');
+const nameEl = document.querySelector('.intro-left');
+
+/* ---------- Helpers ---------- */
+function preload(src){
+  return new Promise(res => { const i=new Image(); i.onload=res; i.src=src; });
+}
+function setCaption(text){ captionEl.textContent = text || ''; }
+
+/* ---------- State ---------- */
+let index = 0;
+let isTransitioning = false;
+const FADE_MS = 600;
+ 
+
+/* ---------- Init ---------- */
+if (RANDOMIZE){
+  // Fisher–Yates shuffle
+  for (let i = slides.length - 1; i > 0; i--){
+    const j = (Math.random()* (i+1)) | 0;
+    [slides[i], slides[j]] = [slides[j], slides[i]];
+  }
+  // Ensure the first slide is an image (not a video)
+  if (slides[0] && slides[0].type !== 'image'){
+    const firstImgIdx = slides.findIndex(s => s.type === 'image');
+    if (firstImgIdx > 0){
+      [slides[0], slides[firstImgIdx]] = [slides[firstImgIdx], slides[0]];
+    }
+  }
+}
+bgVideo.muted = true;
+bgVideo.setAttribute('playsinline','');
+
+/* ---------- Phone portrait media rotation toggle ---------- */
+const mqRotate = window.matchMedia('(max-width: 768px) and (orientation: portrait) and (hover: none) and (pointer: coarse)');
+function applyRotateFlag(){
+  document.body.classList.toggle('rotate-media', mqRotate.matches);
+}
+mqRotate.addEventListener?.('change', applyRotateFlag);
+window.addEventListener('resize', applyRotateFlag);
+applyRotateFlag();
+
+ 
+
+/* ---------- Core show() ---------- */
+async function show(i){
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  index = (i + slides.length) % slides.length;
+  const cur = slides[index];
+  setCaption(cur.caption || '');
+
+  if (cur.type === 'video'){
+    // prepare video on top, keep current bg under while it buffers
+    bgNext.style.opacity = 0;
+
+    // reset & set source
+    try{
+      bgVideo.pause();
+      bgVideo.removeAttribute('src'); bgVideo.load();
+      bgVideo.src = cur.src; bgVideo.load();
+      // apply any per-video class adjustments
+      bgVideo.classList.remove('video-adjust');
+      if (cur.videoClass) bgVideo.classList.add(cur.videoClass);
+    }catch{}
+
+    await new Promise(res=>{
+      if (bgVideo.readyState >= 3) return res();
+      const onReady = ()=>{ bgVideo.removeEventListener('canplay', onReady); res(); };
+      bgVideo.addEventListener('canplay', onReady, { once:true });
+      // safety timeout
+      setTimeout(res, 1200);
+    });
+
+    try{ bgVideo.currentTime = 0; bgVideo.play().catch(()=>{}); }catch{}
+    bgVideo.style.opacity = 1;       // fade video in
+    bgNext.style.opacity = 0;        // ensure crossfade img is hidden
+    setTimeout(()=>{ isTransitioning = false; }, FADE_MS+40);
+    return;
+  }
+
+  // IMAGE path — crossfade on top, then swap bg underneath
+  bgNext.style.opacity = 0;
+  bgNext.src = cur.src;
+  await preload(cur.src);
+  bgNext.style.opacity = 1;          // fade new image on top
+
+  setTimeout(()=>{
+    bg.src = cur.src;                // swap underneath
+    bgNext.style.opacity = 0;        // hide crossfade layer
+    // if video was showing, hide & reset it now (after fade)
+    bgVideo.style.opacity = 0;
+    try{
+      bgVideo.pause();
+      bgVideo.removeAttribute('src'); bgVideo.load();
+    }catch{}
+    isTransitioning = false;
+  }, FADE_MS);
+}
+
+/* ---------- Navigation (mouse, keyboard, touch) ---------- */
+// Arrow follows the mouse; no pointer lock so you can leave the page freely
+function updateCursor(e){
+  const onRightSide = e.clientX > (innerWidth / 2);
+  cursorArrow.textContent = onRightSide ? 'NEXT' : 'PREV';
+  cursorArrow.style.left = e.clientX + 'px';
+  cursorArrow.style.top  = e.clientY + 'px';
+  cursorArrow.style.opacity = 1;
+}
+stage.addEventListener('mousemove', updateCursor);
+stage.addEventListener('mouseenter', () => { document.body.classList.add('cursor-hidden'); });
+stage.addEventListener('mouseleave', () => { document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity = 0; });
+stage.addEventListener('click', (e) => {
+  if (window.isTransitioning) return;
+  const right = e.clientX > innerWidth/2;
+  show(index + (right ? 1 : -1));
+});
+
+/* ---------- About overlay toggle ---------- */
+function showAbout(){
+  document.body.classList.add('show-about');
+  aboutOverlay && aboutOverlay.removeAttribute('hidden');
+}
+function hideAbout(){
+  document.body.classList.remove('show-about');
+  aboutOverlay && aboutOverlay.setAttribute('hidden','');
+}
+nameEl && nameEl.addEventListener('click', (e)=>{
+  e.preventDefault(); e.stopPropagation();
+  if (document.body.classList.contains('show-about')) hideAbout(); else showAbout();
+});
+aboutOverlay && aboutOverlay.addEventListener('click', hideAbout);
+// Prevent overlay-close when clicking bottom name/email inside the overlay
+aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
+  const t = e.target;
+  if (t.closest && (t.closest('.bottom-left') || t.closest('.bottom-right'))){
+    e.stopPropagation();
+  }
+}, true);
+window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideAbout(); });
+
+// keyboard
+window.addEventListener('keydown', (e)=>{
+  if (isTransitioning) return;
+  if (e.key === 'ArrowRight') show(index+1);
+  if (e.key === 'ArrowLeft')  show(index-1);
+});
+
+// touch (swipe)
+let startX=null;
+stage.addEventListener('touchstart', (e)=>{ startX = e.touches?.[0]?.clientX ?? null; }, {passive:true});
+stage.addEventListener('touchend', (e)=>{
+  if (startX==null) return;
+  const endX = e.changedTouches?.[0]?.clientX ?? startX;
+  const dx = endX - startX;
+  if (Math.abs(dx) > 40) show(index + (dx<0 ? 1 : -1));
+  else show(index + (endX > window.innerWidth/2 ? 1 : -1));
+  startX=null;
+}, {passive:true});
+
+/* ---------- Kick off ---------- */
+(function boot(){
+  // Seed first slide without preview
+  const first = slides[0];
+  if (first.type === 'video'){
+    bgVideo.src = first.src; bgVideo.load();
+    bgVideo.play().catch(()=>{}); bgVideo.style.opacity = 1;
+  }else{
+    bg.src = first.src; bg.style.opacity = 1;
+    bgVideo.style.opacity = 0;
+  }
+  setCaption(first.caption || '');
+  index = 0;
+})();
+</script>
+</body>
+</html>
