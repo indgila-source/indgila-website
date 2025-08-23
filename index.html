@@ -57,6 +57,7 @@
   #bg { opacity:1; }          /* under layer (current) */
   #bgNext { opacity:0; }      /* crossfade layer */
   #bgVideo { opacity:0; }     /* video layer */
+  #bgVimeo { pointer-events: none; }  /* let your NEXT/PREV clicks pass through */
 
   /* Bottom UI: name left, caption center, email right */
   .intro-left,.caption,.intro-right{
@@ -208,6 +209,7 @@
     <img id="bg" class="layer" alt="">
     <img id="bgNext" class="layer" alt="">
     <video id="bgVideo" class="layer" autoplay muted playsinline loop></video>
+    <iframe id="bgVimeo" class="layer" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
   </div>
 </div>
 
@@ -274,7 +276,7 @@
 const slides = [
   { type:'image', src:'images/01.jpg', caption:'Project One — short description, location, year.' },
   { type:'image', src:'images/02.jpg', caption:'Project Two — short description, materials, year.' },
-  { type:'video', src:'videos/01.mp4', caption:'Video One — description, year.' },
+  { type:'vimeo', url:'https://player.vimeo.com/video/161351556?h=13d4927166', caption:'Project video — description, year.' },
   { type:'image', src:'images/03.jpg', caption:'Project Three — short description, client, year.' },
   { type:'image', src:'images/04.jpg', caption:'Project Four — short description, year.' },
   { type:'video', src:'videos/02.mp4', caption:'Video Two — description, year.' },
@@ -289,9 +291,9 @@ const slides = [
   { type:'image', src:'images/013.jpg', caption:'Project Thirteen — short description, year.' },
   { type:'image', src:'images/014.jpg', caption:'Project Fourteen — short description, year.' },
   { type:'image', src:'images/015.jpg', caption:'Project Fifteen — short description, year.' },
-  { type:'video', src:'videos/03.mp4', caption:'Video Three — description, year.' },
+  { type:'vimeo', url:'https://player.vimeo.com/video/824804225?h=7c5c7c8c8c', caption:'Project video — description, year.' },
   { type:'video', src:'videos/04.mp4', caption:'Video Four — description, year.', videoClass:'video-adjust' },
-  { type:'video', src:'videos/05.mp4', caption:'Video Five — description, year.' },
+  { type:'vimeo', url:'https://player.vimeo.com/video/123456789?h=abcdef123456', caption:'Project video — description, year.' },
 ];
 // Randomize order each load
 const RANDOMIZE = true;
@@ -301,6 +303,7 @@ const stage = document.getElementById('stage');
 const bg     = document.getElementById('bg');
 const bgNext = document.getElementById('bgNext');
 const bgVideo= document.getElementById('bgVideo');
+const bgVimeo = document.getElementById('bgVimeo');
 const captionEl = document.getElementById('caption');
 const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
@@ -356,7 +359,28 @@ async function show(i){
   const cur = slides[index];
   setCaption(cur.caption || '');
 
+  if (cur.type === 'vimeo') {
+    // Hide/reset HTML5 <video> if it was active
+    bgVimeo.style.opacity = 0;
+    try { bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
+
+    // Build Vimeo URL (autoplay, muted, loop, background)
+    const u = cur.url + (cur.url.includes('?') ? '&' : '?') +
+              'background=1&autoplay=1&muted=1&loop=1&dnt=1';
+
+    bgVimeo.src = u;
+    bgVimeo.style.opacity = 1;
+    bgNext.style.opacity = 0; // ensure crossfade img layer is hidden
+
+    setTimeout(() => { isTransitioning = false; }, FADE_MS + 40);
+    return;
+  }
+
   if (cur.type === 'video'){
+    // Hide/reset Vimeo if it was active
+    bgVimeo.style.opacity = 0;
+    try { bgVimeo.removeAttribute('src'); } catch {}
+    
     // prepare video on top, keep current bg under while it buffers
     bgNext.style.opacity = 0;
 
@@ -386,6 +410,10 @@ async function show(i){
   }
 
   // IMAGE path — crossfade on top, then swap bg underneath
+  // Hide/reset Vimeo if it was active
+  bgVimeo.style.opacity = 0;
+  try { bgVimeo.removeAttribute('src'); } catch {}
+  
   bgNext.style.opacity = 0;
   bgNext.src = cur.src;
   await preload(cur.src);
