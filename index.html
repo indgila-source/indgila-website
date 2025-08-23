@@ -395,7 +395,6 @@ applyRotateFlag();
 async function show(i){
   if (isTransitioning) return;
   isTransitioning = true;
-  armFallbackUnlock(); // guarantees we unlock even if an onload never fires
 
   index = (i + slides.length) % slides.length;
   const cur = slides[index];
@@ -408,7 +407,7 @@ async function show(i){
     // keep the base image visible under the video; clear HTML5 <video>
     try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
 
-    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&loop=1&dnt=1';
+    const u = cur.url + (cur.url.includes('?') ? '&' : '?') + 'background=1&autoplay=1&muted=1&loop=1&dnt=1';
     bgVimeo.style.opacity = 0;          // start hidden
     try { bgVimeo.removeAttribute('src'); } catch {}
     void bgVimeo.offsetWidth;           // hard reset
