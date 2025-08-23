@@ -329,7 +329,7 @@ function setCaption(text){ captionEl.textContent = text || ''; }
 let index = 0;
 let isTransitioning = false;
 let queuedDelta = 0;
-const FADE_MS = 600;
+const FADE_MS = 260;
 const T = (typeof FADE_MS === 'number' ? FADE_MS : 260);
 
 function go(delta) {
@@ -426,17 +426,18 @@ async function show(i){
     const nextSrc = cur.src;
     const img = new Image();
     img.src = nextSrc;
-    const ready = img.decode ? img.decode().catch(()=>{}) : Promise.resolve();
+    const ready = img.decode
+      ? img.decode().catch(()=>{})
+      : new Promise(res => { if (img.complete) res(); else img.onload = () => res(); });
 
     Promise.resolve(ready).then(() => {
       requestAnimationFrame(() => {
-        bgNext.src = nextSrc;        // stage on top layer
-        bgNext.style.opacity = 1;    // start crossfade
+        bgNext.src = nextSrc;
+        bgNext.style.opacity = 1;
         setTimeout(() => {
-          bg.src = nextSrc;          // commit to base
-          bgNext.style.opacity = 0;  // hide the crossfade layer
-          requestAnimationFrame(() => { bgNext.src = ''; }); // prevent ghosts later
-          // only now clear non-image layers
+          bg.src = nextSrc;
+          bgNext.style.opacity = 0;
+          requestAnimationFrame(() => { bgNext.src = ''; });
           try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
           try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
           finishTransition();
@@ -488,9 +489,9 @@ aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
 window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideAbout(); });
 
 // keyboard
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft')  requestNav(-1);
+window.addEventListener('keydown', (e)=>{
   if (e.key === 'ArrowRight') requestNav(+1);
+  if (e.key === 'ArrowLeft')  requestNav(-1);
 });
 
 // touch (swipe)
@@ -500,8 +501,8 @@ stage.addEventListener('touchend', (e)=>{
   if (startX==null) return;
   const endX = e.changedTouches?.[0]?.clientX ?? startX;
   const dx = endX - startX;
-  if (Math.abs(dx) > 40) requestNav(dx<0 ? 1 : -1);
-  else requestNav(endX > window.innerWidth/2 ? 1 : -1);
+  const delta = Math.abs(dx) > 40 ? (dx<0 ? +1 : -1) : (endX > window.innerWidth/2 ? +1 : -1);
+  requestNav(delta);
   startX=null;
 }, {passive:true});
 
