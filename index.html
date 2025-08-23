@@ -420,9 +420,6 @@ async function show(i){
 
 
   if (cur.type === 'image') {
-    if (isTransitioning) return;
-    isTransitioning = true;
-
     const nextSrc = cur.src;
     const img = new Image();
     img.src = nextSrc;
@@ -432,15 +429,16 @@ async function show(i){
 
     Promise.resolve(ready).then(() => {
       requestAnimationFrame(() => {
-        bgNext.src = nextSrc;
-        bgNext.style.opacity = 1;
+        bgNext.src = nextSrc;           // stage on top layer
+        bgNext.style.opacity = 1;       // start crossfade
         setTimeout(() => {
-          bg.src = nextSrc;
-          bgNext.style.opacity = 0;
-          requestAnimationFrame(() => { bgNext.src = ''; });
+          bg.src = nextSrc;             // commit to base
+          bgNext.style.opacity = 0;     // hide crossfade
+          requestAnimationFrame(() => { bgNext.src = ''; }); // prevent ghosts later
+          // now that the new image is visible, clear video layers
           try { bgVimeo.style.opacity = 0; bgVimeo.removeAttribute('src'); } catch {}
           try { bgVideo.style.opacity = 0; bgVideo.pause(); bgVideo.removeAttribute('src'); bgVideo.load(); } catch {}
-          finishTransition();
+          finishTransition();            // unlock nav (queued clicks will run)
         }, T);
       });
     });
