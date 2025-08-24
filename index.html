@@ -8,13 +8,7 @@
 <!-- Optional: local font (preload will warn on file://; OK to ignore locally) -->
 <link rel="preload" href="fonts/Pragmatica_Book.woff2" as="font" type="font/woff2" crossorigin>
 
-<!-- Vimeo performance optimizations -->
-<link rel="preconnect" href="https://player.vimeo.com">
-<link rel="preconnect" href="https://i.vimeocdn.com">
-<link rel="preconnect" href="https://f.vimeocdn.com">
-<link rel="dns-prefetch" href="https://player.vimeo.com">
 
-<script src="https://player.vimeo.com/api/player.js"></script>
 
 <style>
   :root{
@@ -53,19 +47,18 @@
   #imgA,#imgB{width:100%; height:100%; object-fit:cover; object-position:center;}
   #imgA.show,#imgB.show{opacity:1; transition:opacity 300ms ease;}
 
-  /* Full-bleed Vimeo iframes (no seams), above images, below nav hotspots */
+  #imgA,#imgB{ width:100%; height:100%; object-fit:cover; object-position:center; }
+#imgA.show,#imgB.show{ opacity:1; transition:opacity 300ms ease; }
+
+/* full-bleed video layer on top of images */
 .video{
   position:absolute; top:50%; left:50%;
-  width:calc(100vw + 2px); height:calc(56.25vw + 2px); /* +2px overscan kills hairlines */
+  width:calc(100vw + 2px); height:calc(56.25vw + 2px);     /* +2px overscan kills hairlines */
   min-width:calc(177.78vh + 2px); min-height:calc(100vh + 2px);
-  transform:translate(-50%,-50%); border:0; background:#000;
-  opacity:0; transition:none; pointer-events:auto; z-index:4;
+  transform:translate(-50%,-50%); background:#000; border:0;
+  opacity:0; transition:none; z-index:4; pointer-events:auto;
 }
-#vimeoA{ z-index:4; } #vimeoB{ z-index:5; }
 
-/* Images full-bleed; only the shown one fades */
-#imgA,#imgB{ width:100%; height:100%; object-fit:cover; object-position:center; }
-#imgA.show,#imgB.show{ opacity:1; transition:opacity 300ms ease; }
 
 /* Center play/pause overlay */
 #videoOverlay{
@@ -249,8 +242,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   <div id="mediaWrap">
     <img  id="imgA" class="slide" alt="">
     <img  id="imgB" class="slide" alt="">
-            <iframe id="vimeoA" class="video" title="Vimeo A" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
-        <iframe id="vimeoB" class="video" title="Vimeo B" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
+    <video id="mp4" class="video" playsinline muted loop preload="auto"></video>
   </div>
   <button id="videoOverlay" aria-label="Play/Pause"></button>
   <div id="navPrev" aria-hidden="true"></div>
@@ -320,10 +312,11 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 const slides = [
   { type:'image', src:'images/01.jpg', caption:'Project One — short description, location, year.' },
   { type:'image', src:'images/02.jpg', caption:'Project Two — short description, materials, year.' },
-  { type:'vimeo', url:'https://player.vimeo.com/video/1112592340', caption:'Muse Group Rebrand — short description, YEAR.' },
-  { type: 'vimeo', url: 'https://player.vimeo.com/video/1112593009', caption: 'Project video — short description, YEAR.' },
-  { type: 'vimeo', url: 'https://player.vimeo.com/video/1112593526', caption: 'Project video — short description, YEAR.' },
-  { type: 'vimeo', url: 'https://player.vimeo.com/video/1112593659', caption: 'Project video — short description, YEAR.' },
+  { type:'mp4', src:'videos/01.mp4', caption:'Project video — short description, YEAR.' },
+  { type:'mp4', src:'videos/02.mp4', caption:'Project video — short description, YEAR.' },
+  { type:'mp4', src:'videos/03.mp4', caption:'Project video — short description, YEAR.' },
+  { type:'mp4', src:'videos/04.mp4', caption:'Project video — short description, YEAR.' },
+  { type:'mp4', src:'videos/05.mp4', caption:'Project video — short description, YEAR.' },
   { type:'image', src:'images/03.jpg', caption:'Project Three — short description, client, year.' },
   { type:'image', src:'images/04.jpg', caption:'Project Four — short description, year.' },
   { type:'image', src:'images/05.jpg', caption:'Project Five — short description, year.' },
@@ -343,19 +336,16 @@ const slides = [
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function buildSequence(list){
   const imgs = list.filter(s=>s.type==='image');
-  const vids = list.filter(s=>s.type==='vimeo');
+  const vids = list.filter(s=>s.type==='mp4');
   shuffle(imgs); shuffle(vids);
   const seq = [];
-  let i = 0, v = 0;
-  // prefer starting on an image when available
+  let i=0, v=0;
   if (imgs.length) seq.push(imgs[i++]); else if (vids.length) seq.push(vids[v++]);
   while (i<imgs.length || v<vids.length){
-    const lastIsVideo = seq[seq.length-1]?.type === 'vimeo';
+    const lastIsVideo = seq[seq.length-1]?.type === 'mp4';
     if (lastIsVideo){
-      // must place image if any remain
       if (i<imgs.length) seq.push(imgs[i++]); else seq.push(vids[v++]);
     } else {
-      // last was image: 40% chance to place a video (if any left), otherwise image
       if (v<vids.length && Math.random()<0.4) seq.push(vids[v++]);
       else if (i<imgs.length) seq.push(imgs[i++]);
       else seq.push(vids[v++]);
@@ -370,14 +360,7 @@ const FADE = 300;
 let isTransitioning = false, queuedDelta = 0, idx = 0;
 const buf = [document.getElementById('imgA'), document.getElementById('imgB')];
 let active = 0; // 0 or 1
-const vframes = [document.getElementById('vimeoA'), document.getElementById('vimeoB')];
-let activeVid = 0; // index into vframes for the one currently visible
 
-const players = new Map();
-function getPlayer(iframe){
-  if(!players.has(iframe)) players.set(iframe, new Vimeo.Player(iframe));
-  return players.get(iframe);
-}
 
 // DOM elements
 const stage = document.getElementById('stage');
@@ -386,34 +369,16 @@ const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
 const overlay = document.getElementById('videoOverlay');
+const videoEl = document.getElementById('mp4');
 const navPrev  = document.getElementById('navPrev');
 const navNext  = document.getElementById('navNext');
 
-// helper: parse ID from 'https://player.vimeo.com/video/12345?...'
-const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1] : null; };
+
 
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
-/* Clean Vimeo URL: no Vimeo chrome; will play with sound after click */
-function buildVimeoUrl(base){
-  const qs = new URLSearchParams({
-    autoplay:1, muted:0, loop:0, playsinline:1, dnt:1, autopause:1,
-    controls:0, title:0, byline:0, portrait:0
-  });
-  return base + (base.includes('?') ? '&' : '?') + qs.toString();
-}
-function primeNextVideo(i){
-  const j = (i + 1 + seq.length) % seq.length;
-  const next = seq[j];
-  if (!next || next.type !== 'vimeo') return;
-  const url = buildVimeoUrl(next.url);
-  // already primed in either frame? skip
-  if (vframes[0].getAttribute('src') === url || vframes[1].getAttribute('src') === url) return;
-  const hidden = vframes[1 - activeVid];
-  hidden.style.opacity = 0;
-  hidden.src = url;  // start buffering off-screen
-}
+
 
 /* Drop both image layers */
 function dropImages(){ buf[0].classList.remove('show'); buf[1].classList.remove('show'); }
@@ -430,10 +395,7 @@ function go(d){
   show(n);
 }
 
-/* Keep video iframes hidden but DO NOT clear src (keeps buffer warm) */
-function hideVimeo(){
-  vframes.forEach(f => { f.style.opacity = 0; });
-}
+
 
 function show(i){
   if(isTransitioning) return;
@@ -442,43 +404,27 @@ function show(i){
   const cur = seq[i];
   setCaption(cur.caption || '');
 
-  if (cur.type === 'vimeo') {
-    overlay.style.display = 'block';
-    overlay.classList.remove('paused'); // triangle icon
+  if (cur.type === 'mp4') {
+    // keep current image visible while video warms up
+    videoEl.src = cur.src;
+    videoEl.currentTime = 0;
+    videoEl.muted = true;            // quiet loop by default; you can toggle later
+    videoEl.loop  = true;
+    videoEl.playsInline = true;
+    videoEl.preload = 'auto';
 
-    const url  = buildVimeoUrl(cur.url);
-    const curF = vframes[activeVid];
-    const nxtF = vframes[1 - activeVid];
-
-    const onPlay = () => {
-      overlay.onclick = null; // one-shot
-      nxtF.style.opacity = 0;
-      nxtF.removeAttribute('src');
-      nxtF.addEventListener('load', () => {
-        // put video on top; keep image briefly to cover first paint
-        nxtF.style.opacity = 1;
-        curF.style.opacity  = 0;
-        activeVid = 1 - activeVid;
-
-        const player = getPlayer(nxtF);
-        player.play().catch(()=>{});
-
-        // When the first video frame actually renders, drop the images AND hide overlay
-        let done=false;
-        const drop=()=>{ 
-          if(done) return; 
-          done=true; 
-          overlay.style.display = 'none';   // hide play/pause once video is live
-          dropImages(); 
-          finish(); 
-        };
-        player.on('play', drop);
-        setTimeout(drop, 900);               // safety if 'play' is slow
-      }, { once:true });
-      nxtF.src = url;
+    const reveal = () => {
+      videoEl.play().catch(()=>{});
+      videoEl.style.opacity = 1;     // show video on top
+      // drop images a beat later so first frame has painted (no black)
+      setTimeout(() => { buf[0].classList.remove('show'); buf[1].classList.remove('show'); finish(); }, 120);
     };
 
-    overlay.onclick = (e)=>{ e.stopPropagation(); onPlay(); };
+    if (videoEl.readyState >= 2) reveal();
+    else {
+      const once = () => { videoEl.removeEventListener('loadeddata', once); reveal(); };
+      videoEl.addEventListener('loadeddata', once, { once:true });
+    }
     return;
   }
 
@@ -499,13 +445,8 @@ function show(i){
           buf[active].classList.remove('show');   // hide old image
           active = 1 - active;                    // swap buffers
 
-          // hide video iframes AND pause any audio so nothing keeps playing
-          vframes.forEach(f => { 
-            f.style.opacity = 0; 
-            try { const p = getPlayer(f); p.pause(); } catch {} 
-          });
-
-          primeNextVideo(i);                      // keep next video warm
+          videoEl.style.opacity = 0;
+          try { videoEl.pause(); } catch {}
           overlay.style.display = 'none';
           finish();
         }, FADE);
@@ -518,7 +459,7 @@ function show(i){
 // init: show first slide without animation
 (function init(){
   const first = seq[idx];
-  if(first.type==='vimeo'){ show(idx); }
+  if(first.type==='mp4'){ show(idx); }
   else {
     buf[active].src = first.src;
     buf[active].classList.add('show');
