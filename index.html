@@ -242,7 +242,9 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   <div id="mediaWrap">
     <img  id="imgA" class="slide" alt="">
     <img  id="imgB" class="slide" alt="">
-    <video id="mp4" class="video" playsinline muted loop preload="auto"></video>
+    <video id="mp4" class="video" playsinline muted loop preload="auto">
+      <source id="mp4src" src="" type="video/mp4">
+    </video>
   </div>
   <button id="videoOverlay" aria-label="Play/Pause"></button>
   <div id="navPrev" aria-hidden="true"></div>
@@ -369,7 +371,8 @@ const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
 const overlay = document.getElementById('videoOverlay');
-const videoEl = document.getElementById('mp4');
+const videoEl  = document.getElementById('mp4');      // keep if already present
+const mp4src   = document.getElementById('mp4src');
 const navPrev  = document.getElementById('navPrev');
 const navNext  = document.getElementById('navNext');
 
@@ -405,39 +408,46 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'mp4') {
-    // keep current image visible while video warms up
-    videoEl.src = cur.src;
+    // Keep current image visible while the video warms
+    mp4src.src = cur.src;           // set <source> explicitly
+    try { videoEl.pause(); } catch {}
     videoEl.currentTime = 0;
-    videoEl.muted = true;              // quiet loop by default
+    videoEl.muted = true;           // quiet loop by default
     videoEl.loop  = true;
     videoEl.playsInline = true;
     videoEl.preload = 'auto';
+    videoEl.load();                 // force a fresh load of the new source
 
-    // reveal once we have a decodable frame; fallback if the event is slow
+    // Reveal after we have a decodable frame; fallback avoids black forever
     const reveal = () => {
       videoEl.play().catch(()=>{});
-      videoEl.style.opacity = 1;       // show video on top
-      setTimeout(() => {               // drop images after first paint-ish
+      videoEl.style.opacity = 1;    // fade video ON TOP
+      setTimeout(() => {
         buf[0].classList.remove('show');
         buf[1].classList.remove('show');
         finish();
       }, 120);
     };
 
-    const onReady = () => { cleanup(); reveal(); };
-    const onCanPlay = () => { cleanup(); reveal(); };
-    const onError = () => { cleanup(); videoEl.style.opacity = 0; finish(); };
-
+    const onReady  = () => { cleanup(); reveal(); };
+    const onCanPlay= () => { cleanup(); reveal(); };
+    const onError  = () => {
+      cleanup();
+      // If the file can't be decoded, stay on the image, finish nav gracefully.
+      videoEl.style.opacity = 0;
+      finish();
+    };
     function cleanup(){
       videoEl.removeEventListener('loadeddata', onReady);
-      videoEl.removeEventListener('canplay', onCanPlay);
+      videoEl.removeEventListener('canPlay', onCanPlay);
       videoEl.removeEventListener('error', onError);
     }
 
     if (videoEl.readyState >= 2) reveal();
     else {
-      videoEl.addEventListener('loadeddata', onReady, { once:true });
-      videoEl.addEventListener('error', onError, { once:true });
+      videoEl.addEventListener('loadeddata', onReady,   { once:true });
+      videoEl.addEventListener('canplay',    onCanPlay, { once:true });
+      videoEl.addEventListener('error',      onError,   { once:true });
     }
     return;
   }
