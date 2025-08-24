@@ -367,8 +367,9 @@ function primeNextVideo(i){
   const next = seq[j];
   if (!next || next.type !== 'vimeo') return;
   const url = buildVimeoUrl(next.url);
+  // If either iframe already has the right URL, we're primed
+  if (vframes[0].getAttribute('src') === url || vframes[1].getAttribute('src') === url) return;
   const hidden = vframes[1 - activeVid];
-  if (hidden.getAttribute('src') === url) return; // already primed
   hidden.style.opacity = 0;
   hidden.src = url; // start buffering off-screen
 }
@@ -407,29 +408,28 @@ function show(i){
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
 
-    // Reveal logic: show video on top, keep image visible UNDER it until the video actually plays
-    const revealNow = () => {
-      nxtF.style.opacity = 1;           // show new video iframe
-      curF.style.opacity = 0;           // hide old video iframe (if any)
-      activeVid = 1 - activeVid;        // swap active video frame
-
-      // Wait for actual playback, then drop the image layers (no black gap)
-      const player = new Vimeo.Player(nxtF);
-      let done = false;
-      const finishOnce = () => { if (done) return; done = true; dropImages(); primeNextVideo(i); finish(); };
-      player.on('play', finishOnce);     // when first frame renders
-      setTimeout(finishOnce, 1200);      // safety if event is slow
-    };
-
-    // If this video is already buffered in the hidden iframe, swap immediately
+    // already primed? swap immediately
     if (nxtF.getAttribute('src') === url) {
-      revealNow();
-    } else {
-      nxtF.style.opacity = 0;
-      nxtF.removeAttribute('src');
-      nxtF.addEventListener('load', revealNow, { once:true });
-      nxtF.src = url;                    // begin loading off-screen
+      nxtF.style.opacity = 1;   // show video
+      curF.style.opacity  = 0;  // hide old video
+      activeVid = 1 - activeVid;
+      // keep images until first paint, but cap to 400ms so it feels snappy
+      setTimeout(() => { dropImages(); primeNextVideo(i); finish(); }, 400);
+      return;
     }
+    // not primed → load off-screen, then reveal
+    nxtF.style.opacity = 0;
+    // don't removeAttribute('src') on curF — keep whatever is cached alive
+    let swapped = false;
+    const reveal = () => {
+      if (swapped) return; swapped = true;
+      nxtF.style.opacity = 1;
+      curF.style.opacity = 0;
+     activeVid = 1 - activeVid;
+      setTimeout(() => { dropImages(); primeNextVideo(i); finish(); }, 400);
+    };
+    nxtF.addEventListener('load', reveal, { once:true });
+    nxtF.src = url; // begin loading off-screen
     return;
   }
 
@@ -449,8 +449,7 @@ function show(i){
         setTimeout(() => {
           buf[active].classList.remove('show'); // hide previous image
           active = 1 - active;                  // swap buffers
-          // fully clear iframes after image is visible
-          vframes.forEach(f => { try { f.removeAttribute('src'); } catch {} });
+
           primeNextVideo(i);                    // keep next video preloaded
           finish();
         }, FADE);
