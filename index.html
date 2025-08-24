@@ -408,22 +408,36 @@ function show(i){
     // keep current image visible while video warms up
     videoEl.src = cur.src;
     videoEl.currentTime = 0;
-    videoEl.muted = true;            // quiet loop by default; you can toggle later
+    videoEl.muted = true;              // quiet loop by default
     videoEl.loop  = true;
     videoEl.playsInline = true;
     videoEl.preload = 'auto';
 
+    // reveal once we have a decodable frame; fallback if the event is slow
     const reveal = () => {
       videoEl.play().catch(()=>{});
-      videoEl.style.opacity = 1;     // show video on top
-      // drop images a beat later so first frame has painted (no black)
-      setTimeout(() => { buf[0].classList.remove('show'); buf[1].classList.remove('show'); finish(); }, 120);
+      videoEl.style.opacity = 1;       // show video on top
+      setTimeout(() => {               // drop images after first paint-ish
+        buf[0].classList.remove('show');
+        buf[1].classList.remove('show');
+        finish();
+      }, 120);
     };
+
+    const onReady = () => { cleanup(); reveal(); };
+    const onCanPlay = () => { cleanup(); reveal(); };
+    const onError = () => { cleanup(); videoEl.style.opacity = 0; finish(); };
+
+    function cleanup(){
+      videoEl.removeEventListener('loadeddata', onReady);
+      videoEl.removeEventListener('canplay', onCanPlay);
+      videoEl.removeEventListener('error', onError);
+    }
 
     if (videoEl.readyState >= 2) reveal();
     else {
-      const once = () => { videoEl.removeEventListener('loadeddata', once); reveal(); };
-      videoEl.addEventListener('loadeddata', once, { once:true });
+      videoEl.addEventListener('loadeddata', onReady, { once:true });
+      videoEl.addEventListener('error', onError, { once:true });
     }
     return;
   }
@@ -439,8 +453,6 @@ function show(i){
       requestAnimationFrame(() => {
         nextEl.src = cur.src;
         nextEl.classList.add('show');         // start image fade-in (CSS 300ms)
-        // only now fade video away so no old image is ever seen
-        vframes.forEach(f => f.style.opacity = 0);
         setTimeout(() => {
           buf[active].classList.remove('show');   // hide old image
           active = 1 - active;                    // swap buffers
