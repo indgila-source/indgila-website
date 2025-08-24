@@ -343,6 +343,14 @@ let active = 0; // 0 or 1
 const vframes = [document.getElementById('vimeoA'), document.getElementById('vimeoB')];
 let activeVid = 0; // index into vframes for the one currently visible
 
+// cancel-stale video loads & reuse Vimeo players
+let videoToken = 0;
+const players = new Map();
+function getPlayer(iframe){
+  if (!players.has(iframe)) players.set(iframe, new Vimeo.Player(iframe));
+  return players.get(iframe);
+}
+
 // DOM elements
 const stage = document.getElementById('stage');
 const captionEl = document.getElementById('caption');
@@ -398,26 +406,42 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    const url  = buildVimeoUrl(cur.url);
+    const url  = buildVimeoUrl(cur.url);                 // no cache-buster; autoplay+muted included
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
 
-    const finishSwap = () => {
-      nxtF.style.opacity = 1;   // show video
-      curF.style.opacity  = 0;  // hide old video
+    const my = ++videoToken;                              // invalidate older loads
+
+    const swapAndWaitForPlay = () => {
+      if (my !== videoToken) return;                     // stale event → ignore
+      // show the new iframe, hide the previous one
+      nxtF.style.opacity = 1;
+      curF.style.opacity  = 0;
       activeVid = 1 - activeVid;
-      // keep current image visible just a beat, then drop it (covers first paint)
-      setTimeout(() => { buf[0].classList.remove('show'); buf[1].classList.remove('show'); primeNextVideo(i); finish(); }, 350);
+
+      // keep the last image visible until the video actually starts
+      const player = getPlayer(nxtF);
+      let done = false;
+      const finishOnce = () => {
+        if (done || my !== videoToken) return;
+        done = true;
+        dropImages();                                    // now it's safe to remove images
+        primeNextVideo(i);                               // keep pipeline warm
+        finish();
+      };
+      player.play().catch(()=>{});
+      player.on('play', finishOnce);                     // first rendered frame
+      setTimeout(finishOnce, 1200);                      // safety fallback
     };
 
-    // already buffered? swap immediately
-    if (nxtF.getAttribute('src') === url) { finishSwap(); return; }
-
-    // not primed → load off-screen, then reveal
-    nxtF.style.opacity = 0;  // stay hidden while loading
-    // don't remove curF.src — preserving it keeps the player warm
-    nxtF.addEventListener('load', finishSwap, { once:true });
-    nxtF.src = url;
+    // already buffered off-screen? swap immediately; else load then swap
+    if (nxtF.getAttribute('src') === url) {
+      swapAndWaitForPlay();
+    } else {
+      nxtF.style.opacity = 0;
+      nxtF.addEventListener('load', () => { if (my === videoToken) swapAndWaitForPlay(); }, { once:true });
+      nxtF.src = url;                                    // begin loading off-screen
+    }
     return;
   }
 
