@@ -67,6 +67,14 @@
   z-index: 4;
 }
 
+#navPrev, #navNext{
+  position:fixed; top:0; height:100%; width:25vw; z-index:6;
+  pointer-events:auto; background:transparent;
+}
+#navPrev{ left:0; }
+#navNext{ right:0; }
+/* keep video interactive in the center band */
+
   main{ overflow:hidden; } html,body,main{ height:100%; }
   
 
@@ -225,6 +233,8 @@
             <iframe id="vimeoA" class="video" title="Vimeo A" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
         <iframe id="vimeoB" class="video" title="Vimeo B" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
   </div>
+  <div id="navPrev" aria-hidden="true"></div>
+  <div id="navNext" aria-hidden="true"></div>
 </div>
 
 <!-- Bottom UI -->
@@ -357,6 +367,8 @@ const captionEl = document.getElementById('caption');
 const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
+const navPrev = document.getElementById('navPrev');
+const navNext = document.getElementById('navNext');
 
 // helper: parse ID from 'https://player.vimeo.com/video/12345?...'
 const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1] : null; };
@@ -508,6 +520,17 @@ stage.addEventListener('click', (e) => {
   const right = e.clientX > innerWidth/2;
   requestNav(right ? 1 : -1);
 });
+
+// clicks
+navPrev.addEventListener('click', (e)=>{ e.stopPropagation(); requestNav(-1); });
+navNext.addEventListener('click', (e)=>{ e.stopPropagation(); requestNav(+1); });
+// keep the custom cursor working when hovering the hot-spots
+navPrev.addEventListener('mousemove', updateCursor);
+navNext.addEventListener('mousemove', updateCursor);
+navPrev.addEventListener('mouseenter', ()=>{ document.body.classList.add('cursor-hidden'); });
+navNext.addEventListener('mouseenter', ()=>{ document.body.classList.add('cursor-hidden'); });
+navPrev.addEventListener('mouseleave', ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; });
+navNext.addEventListener('mouseleave', ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; });
 
 /* ---------- About overlay toggle ---------- */
 function showAbout(){
