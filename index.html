@@ -373,6 +373,8 @@ function primeNextVideo(i){
   hidden.src = url; // start buffering off-screen
 }
 
+function dropImages(){ buf[0].classList.remove('show'); buf[1].classList.remove('show'); }
+
 
 
 
@@ -401,36 +403,32 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    const url = buildVimeoUrl(cur.url);
+    const url  = buildVimeoUrl(cur.url);
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
 
+    // Reveal logic: show video on top, keep image visible UNDER it until the video actually plays
+    const revealNow = () => {
+      nxtF.style.opacity = 1;           // show new video iframe
+      curF.style.opacity = 0;           // hide old video iframe (if any)
+      activeVid = 1 - activeVid;        // swap active video frame
+
+      // Wait for actual playback, then drop the image layers (no black gap)
+      const player = new Vimeo.Player(nxtF);
+      let done = false;
+      const finishOnce = () => { if (done) return; done = true; dropImages(); primeNextVideo(i); finish(); };
+      player.on('play', finishOnce);     // when first frame renders
+      setTimeout(finishOnce, 1200);      // safety if event is slow
+    };
+
+    // If this video is already buffered in the hidden iframe, swap immediately
     if (nxtF.getAttribute('src') === url) {
-      // already buffered → just swap, no wait
-      nxtF.style.opacity = 1;
-      curF.style.opacity = 0;
-      activeVid = 1 - activeVid;
-      primeNextVideo(i);      // keep the pipeline warm
-      finish();
+      revealNow();
     } else {
       nxtF.style.opacity = 0;
       nxtF.removeAttribute('src');
-      let swapped = false;
-      const reveal = () => {
-        if (swapped) return; swapped = true;
-        // force both image layers off so nothing can peek through
-        buf[0].classList.remove('show');
-        buf[1].classList.remove('show');
-        
-        nxtF.style.opacity = 1;   // show new video
-        curF.style.opacity = 0;   // hide old video
-        activeVid = 1 - activeVid;
-        primeNextVideo(i);
-        finish();
-      };
-      nxtF.addEventListener('load', reveal, { once:true });
-      setTimeout(reveal, 900);     // small safety net, not 5s
-      nxtF.src = url;              // start loading
+      nxtF.addEventListener('load', revealNow, { once:true });
+      nxtF.src = url;                    // begin loading off-screen
     }
     return;
   }
