@@ -383,65 +383,56 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    if (isTransitioning) return;  // Make sure transitions don't get locked
-    isTransitioning = true;
-
-    // Keep the current image visible; clear HTML5 <video> and preload video iframe
-    hideVimeo();
-
-    // Build the video URL with necessary autoplay and other params
-    const base = cur.url; // e.g., https://player.vimeo.com/video/1112592340
+    // keep current image visible; load next video offscreen then swap
+    const base = cur.url; // e.g. https://player.vimeo.com/video/1112592340[?h=HASH]
     const qs = new URLSearchParams({
       background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
     });
     const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
 
-    // Ensure the next iframe loads offscreen first
-    const nextFrame = vframes[1 - activeVid];
-    nextFrame.style.opacity = 0;
-    nextFrame.removeAttribute('src');
+    const curF = vframes[activeVid];
+    const nxtF = vframes[1 - activeVid];
+    nxtF.style.opacity = 0;
+    nxtF.removeAttribute('src');
     let swapped = false;
     const reveal = () => {
       if (swapped) return; swapped = true;
-      nextFrame.style.opacity = 1; // Reveal next iframe
-      vframes[activeVid].style.opacity = 0; // Hide the current iframe
-      activeVid = 1 - activeVid; // Swap visibility
-      finish(); // Unlock navigation
+      nxtF.style.opacity = 1;
+      curF.style.opacity = 0;
+      activeVid = 1 - activeVid;
+      finish();
     };
-    nextFrame.addEventListener('load', reveal, { once: true });
-    setTimeout(reveal, 1200);  // Safety fallback for `load` timing issues
-    nextFrame.src = url;  // Actually load the video URL into the next iframe
+    nxtF.addEventListener('load', reveal, { once:true });
+    setTimeout(reveal, 1200); // safety fallback
+    nxtF.src = url;           // start loading the new video
     return;
   }
 
   // image path: load into the hidden buffer, then crossfade
-  hideVimeo(); // ensure video not visible for images
-  const next = buf[1 - active];
-  const img = new Image();
-  img.src = cur.src;
-  const ready = img.decode ? img.decode().catch(() => {}) :
-                new Promise(res => { if (img.complete) res(); else img.onload = () => res(); });
+  if (cur.type === 'image') {
+    // ensure video iframes are hidden
+    hideVimeo();
 
-  Promise.resolve(ready).then(() => {
-    requestAnimationFrame(() => {
-      next.style.transition = 'none';
-      next.style.opacity = 0;
-      next.src = cur.src;
+    const nextEl = buf[1 - active];
+    const loader = new Image();
+    loader.src = cur.src;
+    const ready = loader.decode
+      ? loader.decode().catch(()=>{})
+      : new Promise(res => { if (loader.complete) res(); else loader.onload = () => res(); });
 
-      requestAnimationFrame(() => {
-        next.style.transition = `opacity ${FADE}ms ease`;
-        next.classList.add('show');
-
-        setTimeout(() => {
-          buf[active].classList.remove('show');
-          buf[active].src = cur.src;
-          next.classList.remove('show');
-          requestAnimationFrame(() => { next.src = ''; });
-          finish();
-        }, FADE);
-      });
+    Promise.resolve(ready).then(() => {
+      // put the new image on the hidden buffer and fade it in
+      nextEl.src = cur.src;
+      nextEl.classList.add('show'); // opacity 0 -> 1 (CSS handles 300ms)
+      setTimeout(() => {
+        // hide old buffer and swap pointers
+        buf[active].classList.remove('show');
+        active = 1 - active;
+        finish();
+      }, FADE);
     });
-  });
+    return;
+  }
 }
 
 // init: show first slide without animation
