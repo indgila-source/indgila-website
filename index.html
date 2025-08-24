@@ -369,23 +369,26 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    // keep the current image visible; clear any HTML5 <video
+    // keep current image visible, then load video into the next iframe (reset the old one)
     try { vimeoFrame.style.opacity = 0; } catch {}
 
-    // Build a URL that can autoplay everywhere
-    const base = cur.url; // e.g. https://player.vimeo.com/video/1112592340[?h=HASH]
+    // build the URL with autoplay + muted, and ensure it uses the correct player params
+    const base = cur.url; // e.g., https://player.vimeo.com/video/1112592340
     const qs = new URLSearchParams({
       background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
     });
     const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
 
-    // Reveal when the iframe finishes a real navigation (plus a small fallback)
+    // Reset video frame so it loads correctly
+    vimeoFrame.style.opacity = 0;
+    try { vimeoFrame.removeAttribute('src'); } catch {}
+    void vimeoFrame.offsetWidth;  // force reload
+
     let shown = false;
     const reveal = () => { if (shown) return; shown = true; vimeoFrame.style.opacity = 1; finish(); };
-    vimeoFrame.removeAttribute('src');      // hard reset so 'load' will fire
     vimeoFrame.addEventListener('load', reveal, { once: true });
-    setTimeout(reveal, 1200);               // safety for odd cache paths
-    vimeoFrame.src = url;                   // <-- actual navigation happens here
+    setTimeout(reveal, 1200);  // fallback timeout
+    vimeoFrame.src = url;     // actually load the video
     return;
   }
 
