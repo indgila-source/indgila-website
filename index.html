@@ -54,10 +54,11 @@
   #imgA.show,#imgB.show{opacity:1; transition:opacity 300ms ease;}
 
   /* Vimeo iframes: true cover (16:9), stacked above images */
-.video {
-  position: absolute; top: 50%; left: 50%; pointer-events: none; border: 0;
-  width: 100vw; height: 56.25vw; min-width: 177.78vh; min-height: 100vh;
-  transform: translate(-50%, -50%); opacity: 0; transition: none; background: #000;
+.video{
+  position:absolute; top:50%; left:50%; pointer-events:none; border:0; background:#000;
+  width:calc(100vw + 2px); height:calc(56.25vw + 2px);     /* +2px bleed */
+  min-width:calc(177.78vh + 2px); min-height:calc(100vh + 2px);
+  transform:translate(-50%,-50%); opacity:0; transition:none;
 }
 #vimeoA {
   z-index: 3;
@@ -355,23 +356,20 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
-// Vimeo URL (no cache-buster; lets the player reuse buffers)
 function buildVimeoUrl(base){
   const qs = new URLSearchParams({ background:1, autoplay:1, muted:1, loop:1, playsinline:1, dnt:1, autopause:0 });
   return base + (base.includes('?') ? '&' : '?') + qs.toString();
 }
-
-// Preload the NEXT slide if it's a video (loads into the hidden iframe)
 function primeNextVideo(i){
   const j = (i + 1 + seq.length) % seq.length;
   const next = seq[j];
   if (!next || next.type !== 'vimeo') return;
   const url = buildVimeoUrl(next.url);
-  // If either iframe already has the right URL, we're primed
+  // already primed in either frame? skip
   if (vframes[0].getAttribute('src') === url || vframes[1].getAttribute('src') === url) return;
   const hidden = vframes[1 - activeVid];
   hidden.style.opacity = 0;
-  hidden.src = url; // start buffering off-screen
+  hidden.src = url;  // start buffering off-screen
 }
 
 function dropImages(){ buf[0].classList.remove('show'); buf[1].classList.remove('show'); }
@@ -388,12 +386,8 @@ function go(d){
   show(n);
 }
 
-// Reset any active videos (Vimeo or HTML5)
-function hideVimeo() {
-  vframes.forEach(frame => {
-    frame.style.opacity = 0;
-    try { frame.removeAttribute('src'); } catch {}
-  });
+function hideVimeo(){
+  vframes.forEach(f => { f.style.opacity = 0; /* keep src so it stays buffered */ });
 }
 
 function show(i){
@@ -408,28 +402,22 @@ function show(i){
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
 
-    // already primed? swap immediately
-    if (nxtF.getAttribute('src') === url) {
+    const finishSwap = () => {
       nxtF.style.opacity = 1;   // show video
       curF.style.opacity  = 0;  // hide old video
       activeVid = 1 - activeVid;
-      // keep images until first paint, but cap to 400ms so it feels snappy
-      setTimeout(() => { dropImages(); primeNextVideo(i); finish(); }, 400);
-      return;
-    }
-    // not primed → load off-screen, then reveal
-    nxtF.style.opacity = 0;
-    // don't removeAttribute('src') on curF — keep whatever is cached alive
-    let swapped = false;
-    const reveal = () => {
-      if (swapped) return; swapped = true;
-      nxtF.style.opacity = 1;
-      curF.style.opacity = 0;
-     activeVid = 1 - activeVid;
-      setTimeout(() => { dropImages(); primeNextVideo(i); finish(); }, 400);
+      // keep current image visible just a beat, then drop it (covers first paint)
+      setTimeout(() => { buf[0].classList.remove('show'); buf[1].classList.remove('show'); primeNextVideo(i); finish(); }, 350);
     };
-    nxtF.addEventListener('load', reveal, { once:true });
-    nxtF.src = url; // begin loading off-screen
+
+    // already buffered? swap immediately
+    if (nxtF.getAttribute('src') === url) { finishSwap(); return; }
+
+    // not primed → load off-screen, then reveal
+    nxtF.style.opacity = 0;  // stay hidden while loading
+    // don't remove curF.src — preserving it keeps the player warm
+    nxtF.addEventListener('load', finishSwap, { once:true });
+    nxtF.src = url;
     return;
   }
 
@@ -447,10 +435,10 @@ function show(i){
         // only now fade video away so no old image is ever seen
         vframes.forEach(f => f.style.opacity = 0);
         setTimeout(() => {
-          buf[active].classList.remove('show'); // hide previous image
-          active = 1 - active;                  // swap buffers
-
-          primeNextVideo(i);                    // keep next video preloaded
+          buf[active].classList.remove('show');   // hide old image
+          active = 1 - active;                    // swap buffers
+          vframes.forEach(f => f.style.opacity = 0);  // hide videos (keep src intact!)
+          primeNextVideo(i);                      // pre-buffer the next video
           finish();
         }, FADE);
       });
