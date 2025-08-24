@@ -54,11 +54,13 @@
   #imgA.show,#imgB.show{opacity:1; transition:opacity 300ms ease;}
 
   /* Vimeo: true cover (16:9) and no pointer events */
-  #vimeo{
-    z-index:3; pointer-events:none; border:0;
-    top:50%; left:50%; width:100vw; height:56.25vw; min-width:177.78vh; min-height:100vh;
-    transform:translate(-50%,-50%); opacity:0; transition:none;
-  }
+.video{
+  position:absolute; top:50%; left:50%; pointer-events:none; border:0;
+  width:100vw; height:56.25vw; min-width:177.78vh; min-height:100vh;
+  transform:translate(-50%,-50%); opacity:0; transition:none; background:#000;
+}
+#vimeoA{ z-index:3; }
+#vimeoB{ z-index:4; }
 
   main{ overflow:hidden; } html,body,main{ height:100%; }
   
@@ -215,7 +217,8 @@
   <div id="mediaWrap">
     <img  id="imgA" class="slide" alt="">
     <img  id="imgB" class="slide" alt="">
-    <iframe id="vimeo" class="slide video" title="Vimeo player" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
+            <iframe id="vimeoA" class="video" title="Vimeo A" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
+        <iframe id="vimeoB" class="video" title="Vimeo B" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
   </div>
 </div>
 
@@ -332,8 +335,8 @@ const FADE = 300;
 let isTransitioning = false, queuedDelta = 0, idx = 0;
 const buf = [document.getElementById('imgA'), document.getElementById('imgB')];
 let active = 0; // 0 or 1
-const vimeoFrame = document.getElementById('vimeo');
-let vimeoPlayer = null;
+const vframes = [document.getElementById('vimeoA'), document.getElementById('vimeoB')];
+let activeVid = 0; // index into vframes for the one currently visible
 
 // DOM elements
 const stage = document.getElementById('stage');
@@ -348,6 +351,34 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
+// helper: build Vimeo URL with autoplay parameters
+function buildVimeoUrl(baseUrl) {
+  const qs = new URLSearchParams({
+    background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
+  });
+  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + qs.toString();
+}
+
+// video switching logic using dual iframes
+function swapToVideo(baseUrl){
+  const url = buildVimeoUrl(baseUrl);  // e.g., https://player.vimeo.com/video/12345?autoplay=1...
+  const cur = vframes[activeVid];
+  const nxt = vframes[1 - activeVid];
+  nxt.style.opacity = 0;               // hide next iframe
+  nxt.removeAttribute('src');         // reset next iframe
+  let swapped = false;
+  const reveal = () => {
+    if (swapped) return; swapped = true;
+    nxt.style.opacity = 1;             // reveal next iframe
+    cur.style.opacity = 0;             // hide the old iframe
+    activeVid = 1 - activeVid;         // swap visibility
+    finish();                          // unlock navigation
+  };
+  nxt.addEventListener('load', reveal, { once:true });
+  setTimeout(reveal, 1200);            // safety fallback for the `load` event
+  nxt.src = url;                      // load the video URL into the next iframe
+}
+
 function requestNav(d){ if(isTransitioning){ queuedDelta=d; return; } go(d); }
 function finish(){ isTransitioning=false; if(queuedDelta){ const d=queuedDelta; queuedDelta=0; go(d); } }
 
@@ -357,8 +388,10 @@ function go(d){
 }
 
 function hideVimeo(){
-  vimeoFrame.style.opacity = 0;
-  try { vimeoPlayer && vimeoPlayer.pause(); } catch {}
+  vframes.forEach(frame => {
+    frame.style.opacity = 0;
+    try { frame.removeAttribute('src'); } catch {}
+  });
 }
 
 function show(i){
@@ -369,26 +402,7 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    // keep current image visible, then load video into the next iframe (reset the old one)
-    try { vimeoFrame.style.opacity = 0; } catch {}
-
-    // build the URL with autoplay + muted, and ensure it uses the correct player params
-    const base = cur.url; // e.g., https://player.vimeo.com/video/1112592340
-    const qs = new URLSearchParams({
-      background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
-    });
-    const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
-
-    // Reset video frame so it loads correctly
-    vimeoFrame.style.opacity = 0;
-    try { vimeoFrame.removeAttribute('src'); } catch {}
-    void vimeoFrame.offsetWidth;  // force reload
-
-    let shown = false;
-    const reveal = () => { if (shown) return; shown = true; vimeoFrame.style.opacity = 1; finish(); };
-    vimeoFrame.addEventListener('load', reveal, { once: true });
-    setTimeout(reveal, 1200);  // fallback timeout
-    vimeoFrame.src = url;     // actually load the video
+    swapToVideo(cur.url);   // load and switch to the new Vimeo video
     return;
   }
 
