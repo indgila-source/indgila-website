@@ -210,28 +210,34 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     /* Media: default mobile behavior (letterboxed contain) */
     .layer{ object-fit: contain; object-position: center center; background:#000; }
 
-    /* Phones in portrait: rotate a shared wrapper so media stays full-bleed;
-       Use dynamic viewport units + tiny overscan to avoid mid-screen seam */
+    /* Rotate only the media wrapper; UI stays upright */
     body.rotate-media #mediaWrap{
       inset: auto;
       left: 50%;
       top: 50%;
-      /* fallback using classic vh/vw with 2px overscan */
+      /* fallback using classic vh/vw with tiny overscan to avoid 1px seam */
       width: calc(100vh + 2px);
       height: calc(100vw + 2px);
       transform: translate(-50%, -50%) rotate(90deg) translateZ(0);
       transform-origin: center center;
       background:#000;
       backface-visibility: hidden;
-      will-change: transform, opacity; /* ensure GPU compositing for fades */
+      will-change: transform;
     }
-    /* Ensure media covers when rotated */
-    body.rotate-media .layer{ object-fit: cover; }
-    /* Prefer dynamic viewport units when supported (prevents address bar resize jump) */
+
+    /* When rotated, make media fill the rotated frame */
+    body.rotate-media #imgA,
+    body.rotate-media #imgB,
+    body.rotate-media .video{
+      object-fit: cover;          /* change to 'contain' if you prefer letterboxing */
+      object-position: center;
+    }
+
+    /* Prefer dynamic viewport units when supported (prevents address-bar jump) */
     @supports (height: 100dvh){
       body.rotate-media #mediaWrap{
         width: calc(100dvh + 2px);
-        height: calc(100dvw + 2px);
+        height: calc(100vw + 2px);
       }
     }
   }
@@ -587,6 +593,19 @@ stage.addEventListener('touchend', (e)=>{
   requestNav(delta);
   startX = null;
 }, { passive:true });
+
+
+/* ---------- Mobile rotation handling ---------- */
+function applyRotateMedia(){
+  const isPhone = window.matchMedia('(max-width: 768px)').matches;
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  document.body.classList.toggle('rotate-media', isPhone && isPortrait);
+}
+
+// run once at startup, and again after resize/orientation change
+applyRotateMedia();
+window.addEventListener('resize', () => { setTimeout(applyRotateMedia, 150); }, { passive:true });
+window.addEventListener('orientationchange', () => { setTimeout(applyRotateMedia, 250); }, { passive:true });
 
 
 </script>
