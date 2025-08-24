@@ -351,33 +351,9 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
-// helper: build Vimeo URL with autoplay parameters
-function buildVimeoUrl(baseUrl) {
-  const qs = new URLSearchParams({
-    background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
-  });
-  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + qs.toString();
-}
 
-// video switching logic using dual iframes
-function swapToVideo(baseUrl){
-  const url = buildVimeoUrl(baseUrl);  // e.g., https://player.vimeo.com/video/12345?autoplay=1...
-  const cur = vframes[activeVid];
-  const nxt = vframes[1 - activeVid];
-  nxt.style.opacity = 0;               // hide next iframe
-  nxt.removeAttribute('src');         // reset next iframe
-  let swapped = false;
-  const reveal = () => {
-    if (swapped) return; swapped = true;
-    nxt.style.opacity = 1;             // reveal next iframe
-    cur.style.opacity = 0;             // hide the old iframe
-    activeVid = 1 - activeVid;         // swap visibility
-    finish();                          // unlock navigation
-  };
-  nxt.addEventListener('load', reveal, { once:true });
-  setTimeout(reveal, 1200);            // safety fallback for the `load` event
-  nxt.src = url;                      // load the video URL into the next iframe
-}
+
+
 
 function requestNav(d){ if(isTransitioning){ queuedDelta=d; return; } go(d); }
 function finish(){ isTransitioning=false; if(queuedDelta){ const d=queuedDelta; queuedDelta=0; go(d); } }
@@ -402,7 +378,34 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    swapToVideo(cur.url);   // load and switch to the new Vimeo video
+    if (isTransitioning) return;  // make sure transitions don't get locked
+    isTransitioning = true;
+
+    // Clear old video layers
+    hideVimeo();
+
+    // Build the video URL with necessary params
+    const base = cur.url;  // URL of the Vimeo video
+    const qs = new URLSearchParams({
+      background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
+    });
+    const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
+
+    // Ensure the next iframe loads offscreen first
+    const nextFrame = vframes[1 - activeVid];
+    nextFrame.style.opacity = 0;
+    nextFrame.removeAttribute('src');
+    let swapped = false;
+    const reveal = () => {
+      if (swapped) return; swapped = true;
+      nextFrame.style.opacity = 1;  // reveal next iframe
+      vframes[activeVid].style.opacity = 0;  // hide the current iframe
+      activeVid = 1 - activeVid;  // swap visibility
+      finish(); // unlock navigation
+    };
+    nextFrame.addEventListener('load', reveal, { once:true });
+    setTimeout(reveal, 1200);  // fallback for rare load timing issues
+    nextFrame.src = url;  // actually load the video URL
     return;
   }
 
@@ -411,22 +414,27 @@ function show(i){
   const next = buf[1 - active];
   const img = new Image();
   img.src = cur.src;
-  const ready = img.decode ? img.decode().catch(()=>{}) :
-                new Promise(res => { if(img.complete) res(); else img.onload = () => res(); });
-  Promise.resolve(ready).then(()=>{
-    // stage next image
-    next.classList.remove('show');
-    next.src = cur.src;
-    // commit on next 2 frames so CSS sees 0 -> 1 change
-    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
-      next.classList.add('show');
-      setTimeout(()=>{
-        // hide old buffer and swap
-        buf[active].classList.remove('show');
-        active = 1 - active;
-        finish();
-      }, FADE);
-    });});
+  const ready = img.decode
+    ? img.decode().catch(()=>{})
+    : new Promise(res => { if(img.complete) res(); else img.onload = () => res(); });
+
+  Promise.resolve(ready).then(() => {
+    requestAnimationFrame(() => {
+      next.style.transition = 'none';
+      next.style.opacity = 0;
+      next.src = cur.src;
+      requestAnimationFrame(() => {
+        next.style.transition = `opacity ${FADE}ms ease`;
+        next.classList.add('show');
+        setTimeout(() => {
+          buf[active].classList.remove('show');
+          buf[active].src = cur.src;
+          next.classList.remove('show');
+          requestAnimationFrame(() => { next.src = ''; });
+          finish();
+        }, FADE);
+      });
+    });
   });
 }
 
