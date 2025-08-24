@@ -355,6 +355,24 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
+// Vimeo URL (no cache-buster; lets the player reuse buffers)
+function buildVimeoUrl(base){
+  const qs = new URLSearchParams({ background:1, autoplay:1, muted:1, loop:1, playsinline:1, dnt:1, autopause:0 });
+  return base + (base.includes('?') ? '&' : '?') + qs.toString();
+}
+
+// Preload the NEXT slide if it's a video (loads into the hidden iframe)
+function primeNextVideo(i){
+  const j = (i + 1 + seq.length) % seq.length;
+  const next = seq[j];
+  if (!next || next.type !== 'vimeo') return;
+  const url = buildVimeoUrl(next.url);
+  const hidden = vframes[1 - activeVid];
+  if (hidden.getAttribute('src') === url) return; // already primed
+  hidden.style.opacity = 0;
+  hidden.src = url; // start buffering off-screen
+}
+
 
 
 
@@ -383,28 +401,33 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    // keep current image visible; load next video offscreen then swap
-    const base = cur.url; // e.g. https://player.vimeo.com/video/1112592340[?h=HASH]
-    const qs = new URLSearchParams({
-      background: 1, autoplay: 1, muted: 1, loop: 1, playsinline: 1, dnt: 1, autopause: 0, ts: Date.now()
-    });
-    const url = base + (base.includes('?') ? '&' : '?') + qs.toString();
-
+    const url = buildVimeoUrl(cur.url);
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
-    nxtF.style.opacity = 0;
-    nxtF.removeAttribute('src');
-    let swapped = false;
-    const reveal = () => {
-      if (swapped) return; swapped = true;
+
+    if (nxtF.getAttribute('src') === url) {
+      // already buffered → just swap, no wait
       nxtF.style.opacity = 1;
       curF.style.opacity = 0;
       activeVid = 1 - activeVid;
+      primeNextVideo(i);      // keep the pipeline warm
       finish();
-    };
-    nxtF.addEventListener('load', reveal, { once:true });
-    setTimeout(reveal, 1200); // safety fallback
-    nxtF.src = url;           // start loading the new video
+    } else {
+      nxtF.style.opacity = 0;
+      nxtF.removeAttribute('src');
+      let swapped = false;
+      const reveal = () => {
+        if (swapped) return; swapped = true;
+        nxtF.style.opacity = 1;
+        curF.style.opacity = 0;
+        activeVid = 1 - activeVid;
+        primeNextVideo(i);
+        finish();
+      };
+      nxtF.addEventListener('load', reveal, { once:true });
+      setTimeout(reveal, 900);     // small safety net, not 5s
+      nxtF.src = url;              // start loading
+    }
     return;
   }
 
@@ -428,11 +451,12 @@ function show(i){
         nextEl.classList.add('show');         // fade image in (CSS handles 300ms)
         if (playing) playing.style.opacity = 0; // fade video OFF *now*
         setTimeout(() => {
-          // commit: hide old image layer, swap buffers
-          buf[active].classList.remove('show');
-          active = 1 - active;
-          if (playing) hideVimeo();           // now it's safe to fully clear iframes
-          finish();
+                  // commit: hide old image layer, swap buffers
+        buf[active].classList.remove('show');
+        active = 1 - active;
+        if (playing) hideVimeo();           // now it's safe to fully clear iframes
+        primeNextVideo(i);
+        finish();
         }, FADE);
       });
     });
