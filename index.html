@@ -410,10 +410,10 @@ function show(i){
 
   // image path: load into the hidden buffer, then crossfade
   if (cur.type === 'image') {
-    // ensure video iframes are hidden
-    hideVimeo();
-
+    // DO NOT call hideVimeo() here — keep the video visible until the new image is ready
     const nextEl = buf[1 - active];
+    const playing = vframes.find(f => f.getAttribute('src')); // currently visible Vimeo iframe (if any)
+
     const loader = new Image();
     loader.src = cur.src;
     const ready = loader.decode
@@ -421,15 +421,20 @@ function show(i){
       : new Promise(res => { if (loader.complete) res(); else loader.onload = () => res(); });
 
     Promise.resolve(ready).then(() => {
-      // put the new image on the hidden buffer and fade it in
+      // stage next image on the hidden buffer
       nextEl.src = cur.src;
-      nextEl.classList.add('show'); // opacity 0 -> 1 (CSS handles 300ms)
-      setTimeout(() => {
-        // hide old buffer and swap pointers
-        buf[active].classList.remove('show');
-        active = 1 - active;
-        finish();
-      }, FADE);
+      // start the crossfade: image in, video out
+      requestAnimationFrame(() => {
+        nextEl.classList.add('show');         // fade image in (CSS handles 300ms)
+        if (playing) playing.style.opacity = 0; // fade video OFF *now*
+        setTimeout(() => {
+          // commit: hide old image layer, swap buffers
+          buf[active].classList.remove('show');
+          active = 1 - active;
+          if (playing) hideVimeo();           // now it's safe to fully clear iframes
+          finish();
+        }, FADE);
+      });
     });
     return;
   }
