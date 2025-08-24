@@ -300,6 +300,33 @@ const slides = [
   { type:'image', src:'images/014.jpg', caption:'Project Fourteen — short description, year.' },
   { type:'image', src:'images/015.jpg', caption:'Project Fifteen — short description, year.' },
 ];
+
+// Build a randomized sequence that won't put two videos in a row
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function buildSequence(list){
+  const imgs = list.filter(s=>s.type==='image');
+  const vids = list.filter(s=>s.type==='vimeo');
+  shuffle(imgs); shuffle(vids);
+  const seq = [];
+  let i = 0, v = 0;
+  // prefer starting on an image when available
+  if (imgs.length) seq.push(imgs[i++]); else if (vids.length) seq.push(vids[v++]);
+  while (i<imgs.length || v<vids.length){
+    const lastIsVideo = seq[seq.length-1]?.type === 'vimeo';
+    if (lastIsVideo){
+      // must place image if any remain
+      if (i<imgs.length) seq.push(imgs[i++]); else seq.push(vids[v++]);
+    } else {
+      // last was image: 40% chance to place a video (if any left), otherwise image
+      if (v<vids.length && Math.random()<0.4) seq.push(vids[v++]);
+      else if (i<imgs.length) seq.push(imgs[i++]);
+      else seq.push(vids[v++]);
+    }
+  }
+  return seq;
+}
+let seq = buildSequence(slides);
+
 // --- timing & state ---
 const FADE = 300;
 let isTransitioning = false, queuedDelta = 0, idx = 0;
@@ -325,7 +352,7 @@ function requestNav(d){ if(isTransitioning){ queuedDelta=d; return; } go(d); }
 function finish(){ isTransitioning=false; if(queuedDelta){ const d=queuedDelta; queuedDelta=0; go(d); } }
 
 function go(d){
-  const n = (idx + d + slides.length) % slides.length;
+  const n = (idx + d + seq.length) % seq.length;
   show(n);
 }
 
@@ -338,7 +365,7 @@ function show(i){
   if(isTransitioning) return;
   isTransitioning = true;
   idx = i;
-  const cur = slides[i];
+  const cur = seq[i];
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
@@ -388,7 +415,7 @@ function show(i){
 
 // init: show first slide without animation
 (function init(){
-  const first = slides[idx];
+  const first = seq[idx];
   if(first.type==='vimeo'){ show(idx); }
   else {
     buf[active].src = first.src;
