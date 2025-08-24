@@ -55,7 +55,7 @@
 
   /* Vimeo iframes: true cover (16:9), stacked above images */
 .video{
-  position:absolute; top:50%; left:50%; pointer-events:none; border:0; background:#000;
+  position:absolute; top:50%; left:50%; pointer-events:auto; border:0; background:#000;
   width:calc(100vw + 2px); height:calc(56.25vw + 2px);     /* +2px bleed */
   min-width:calc(177.78vh + 2px); min-height:calc(100vh + 2px);
   transform:translate(-50%,-50%); opacity:0; transition:none;
@@ -365,7 +365,16 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 function setCaption(text){ captionEl.textContent = text || ''; }
 
 function buildVimeoUrl(base){
-  const qs = new URLSearchParams({ background:1, autoplay:1, muted:1, loop:1, playsinline:1, dnt:1, autopause:0 });
+  const qs = new URLSearchParams({
+    autoplay: 1,        // start after click
+    muted: 0,           // sound ON
+    playsinline: 1,
+    dnt: 1,
+    autopause: 1,
+    loop: 0,            // set 1 if you want loops with sound
+    title: 0, byline: 0, portrait: 0, // cleaner chrome
+    controls: 1         // show controls so users can pause/mute/fullscreen
+  });
   return base + (base.includes('?') ? '&' : '?') + qs.toString();
 }
 function primeNextVideo(i){
