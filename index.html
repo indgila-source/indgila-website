@@ -53,27 +53,46 @@
   #imgA,#imgB{width:100%; height:100%; object-fit:cover; object-position:center;}
   #imgA.show,#imgB.show{opacity:1; transition:opacity 300ms ease;}
 
-  /* Vimeo iframes: true cover (16:9), stacked above images */
+  /* Full-bleed Vimeo iframes (no seams), above images, below nav hotspots */
 .video{
-  position:absolute; top:50%; left:50%; pointer-events:auto; border:0; background:#000;
-  width:calc(100vw + 2px); height:calc(56.25vw + 2px);     /* +2px bleed */
+  position:absolute; top:50%; left:50%;
+  width:calc(100vw + 2px); height:calc(56.25vw + 2px); /* +2px overscan kills hairlines */
   min-width:calc(177.78vh + 2px); min-height:calc(100vh + 2px);
-  transform:translate(-50%,-50%); opacity:0; transition:none;
+  transform:translate(-50%,-50%); border:0; background:#000;
+  opacity:0; transition:none; pointer-events:auto; z-index:4;
 }
-#vimeoA {
-  z-index: 3;
+#vimeoA{ z-index:4; } #vimeoB{ z-index:5; }
+
+/* Images full-bleed; only the shown one fades */
+#imgA,#imgB{ width:100%; height:100%; object-fit:cover; object-position:center; }
+#imgA.show,#imgB.show{ opacity:1; transition:opacity 300ms ease; }
+
+/* Center play/pause overlay */
+#videoOverlay{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:82px; height:82px; border-radius:50%; border:0; cursor:pointer;
+  background:rgba(255,255,255,.85); box-shadow:0 6px 14px rgba(0,0,0,.35);
+  z-index:6; display:none;
 }
-#vimeoB {
-  z-index: 4;
+#videoOverlay::before{ /* triangle (play) */
+  content:""; position:absolute; left:34px; top:27px; width:0; height:0;
+  border-left:24px solid #000; border-top:14px solid transparent; border-bottom:14px solid transparent;
+}
+#videoOverlay.paused::before{ /* pause icon when playing */
+  content:""; width:18px; height:28px;
+  background:linear-gradient(90deg,#000 0 40%,transparent 40% 60%,#000 60% 100%);
+  left:32px; top:27px;
 }
 
-#navPrev, #navNext{
-  position:fixed; top:0; height:100%; width:25vw; z-index:6;
+/* Edge hotspots: keep center for video controls; edges for PREV/NEXT */
+#navPrev,#navNext{
+  position:fixed; top:0; height:100%; width:25vw; z-index:7;
   pointer-events:auto; background:transparent;
 }
-#navPrev{ left:0; }
-#navNext{ right:0; }
-/* keep video interactive in the center band */
+#navPrev{ left:0; } #navNext{ right:0; }
+
+/* Ensure stage is full-height */
+html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
   main{ overflow:hidden; } html,body,main{ height:100%; }
   
@@ -233,6 +252,7 @@
             <iframe id="vimeoA" class="video" title="Vimeo A" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
         <iframe id="vimeoB" class="video" title="Vimeo B" allow="autoplay; fullscreen; picture-in-picture" frameborder="0"></iframe>
   </div>
+  <button id="videoOverlay" aria-label="Play/Pause"></button>
   <div id="navPrev" aria-hidden="true"></div>
   <div id="navNext" aria-hidden="true"></div>
 </div>
@@ -353,11 +373,9 @@ let active = 0; // 0 or 1
 const vframes = [document.getElementById('vimeoA'), document.getElementById('vimeoB')];
 let activeVid = 0; // index into vframes for the one currently visible
 
-// cancel-stale video loads & reuse Vimeo players
-let videoToken = 0;
 const players = new Map();
 function getPlayer(iframe){
-  if (!players.has(iframe)) players.set(iframe, new Vimeo.Player(iframe));
+  if(!players.has(iframe)) players.set(iframe, new Vimeo.Player(iframe));
   return players.get(iframe);
 }
 
@@ -367,8 +385,9 @@ const captionEl = document.getElementById('caption');
 const cursorArrow = document.getElementById('cursorArrow');
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
-const navPrev = document.getElementById('navPrev');
-const navNext = document.getElementById('navNext');
+const overlay = document.getElementById('videoOverlay');
+const navPrev  = document.getElementById('navPrev');
+const navNext  = document.getElementById('navNext');
 
 // helper: parse ID from 'https://player.vimeo.com/video/12345?...'
 const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1] : null; };
@@ -376,16 +395,11 @@ const vimeoId = u => { const m = String(u).match(/video\/(\d+)/); return m ? m[1
 // helper: set caption
 function setCaption(text){ captionEl.textContent = text || ''; }
 
+/* Clean Vimeo URL: no Vimeo chrome; will play with sound after click */
 function buildVimeoUrl(base){
   const qs = new URLSearchParams({
-    autoplay: 1,        // start after click
-    muted: 0,           // sound ON
-    playsinline: 1,
-    dnt: 1,
-    autopause: 1,
-    loop: 0,            // set 1 if you want loops with sound
-    title: 0, byline: 0, portrait: 0, // cleaner chrome
-    controls: 1         // show controls so users can pause/mute/fullscreen
+    autoplay:1, muted:0, loop:0, playsinline:1, dnt:1, autopause:1,
+    controls:0, title:0, byline:0, portrait:0
   });
   return base + (base.includes('?') ? '&' : '?') + qs.toString();
 }
@@ -401,6 +415,7 @@ function primeNextVideo(i){
   hidden.src = url;  // start buffering off-screen
 }
 
+/* Drop both image layers */
 function dropImages(){ buf[0].classList.remove('show'); buf[1].classList.remove('show'); }
 
 
@@ -415,8 +430,9 @@ function go(d){
   show(n);
 }
 
+/* Keep video iframes hidden but DO NOT clear src (keeps buffer warm) */
 function hideVimeo(){
-  vframes.forEach(f => { f.style.opacity = 0; /* keep src so it stays buffered */ });
+  vframes.forEach(f => { f.style.opacity = 0; });
 }
 
 function show(i){
@@ -427,42 +443,37 @@ function show(i){
   setCaption(cur.caption || '');
 
   if (cur.type === 'vimeo') {
-    const url  = buildVimeoUrl(cur.url);                 // no cache-buster; autoplay+muted included
+    overlay.style.display = 'block';
+    overlay.classList.remove('paused'); // triangle icon
+
+    const url  = buildVimeoUrl(cur.url);
     const curF = vframes[activeVid];
     const nxtF = vframes[1 - activeVid];
 
-    const my = ++videoToken;                              // invalidate older loads
+    const onPlay = () => {
+      overlay.onclick = null; // one-shot
+      nxtF.style.opacity = 0;
+      nxtF.removeAttribute('src');
+      nxtF.addEventListener('load', () => {
+        // put video on top; keep image briefly to cover first paint
+        nxtF.style.opacity = 1;
+        curF.style.opacity  = 0;
+        activeVid = 1 - activeVid;
 
-    const swapAndWaitForPlay = () => {
-      if (my !== videoToken) return;                     // stale event → ignore
-      // show the new iframe, hide the previous one
-      nxtF.style.opacity = 1;
-      curF.style.opacity  = 0;
-      activeVid = 1 - activeVid;
+        const player = getPlayer(nxtF);
+        player.play().catch(()=>{});
+        // switch overlay to "pause" look
+        overlay.classList.add('paused');
 
-      // keep the last image visible until the video actually starts
-      const player = getPlayer(nxtF);
-      let done = false;
-      const finishOnce = () => {
-        if (done || my !== videoToken) return;
-        done = true;
-        dropImages();                                    // now it's safe to remove images
-        primeNextVideo(i);                               // keep pipeline warm
-        finish();
-      };
-      player.play().catch(()=>{});
-      player.on('play', finishOnce);                     // first rendered frame
-      setTimeout(finishOnce, 1200);                      // safety fallback
+        // drop images when first frame renders, or after short safety
+        let done=false; const drop=()=>{ if(done) return; done=true; dropImages(); finish(); };
+        player.on('play', drop);
+        setTimeout(drop, 900);
+      }, { once:true });
+      nxtF.src = url;
     };
 
-    // already buffered off-screen? swap immediately; else load then swap
-    if (nxtF.getAttribute('src') === url) {
-      swapAndWaitForPlay();
-    } else {
-      nxtF.style.opacity = 0;
-      nxtF.addEventListener('load', () => { if (my === videoToken) swapAndWaitForPlay(); }, { once:true });
-      nxtF.src = url;                                    // begin loading off-screen
-    }
+    overlay.onclick = (e)=>{ e.stopPropagation(); onPlay(); };
     return;
   }
 
@@ -484,6 +495,8 @@ function show(i){
           active = 1 - active;                    // swap buffers
           vframes.forEach(f => f.style.opacity = 0);  // hide videos (keep src intact!)
           primeNextVideo(i);                      // pre-buffer the next video
+          overlay.style.display = 'none';
+          hideVimeo();  // hide iframes (do NOT remove src)
           finish();
         }, FADE);
       });
@@ -521,16 +534,11 @@ stage.addEventListener('click', (e) => {
   requestNav(right ? 1 : -1);
 });
 
-// clicks
-navPrev.addEventListener('click', (e)=>{ e.stopPropagation(); requestNav(-1); });
-navNext.addEventListener('click', (e)=>{ e.stopPropagation(); requestNav(+1); });
-// keep the custom cursor working when hovering the hot-spots
-navPrev.addEventListener('mousemove', updateCursor);
-navNext.addEventListener('mousemove', updateCursor);
-navPrev.addEventListener('mouseenter', ()=>{ document.body.classList.add('cursor-hidden'); });
-navNext.addEventListener('mouseenter', ()=>{ document.body.classList.add('cursor-hidden'); });
-navPrev.addEventListener('mouseleave', ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; });
-navNext.addEventListener('mouseleave', ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; });
+navPrev.onclick = (e)=>{ e.stopPropagation(); requestNav(-1); };
+navNext.onclick = (e)=>{ e.stopPropagation(); requestNav(+1); };
+navPrev.onmousemove = navNext.onmousemove = updateCursor;
+navPrev.onmouseenter = navNext.onmouseenter = ()=>document.body.classList.add('cursor-hidden');
+navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; };
 
 /* ---------- About overlay toggle ---------- */
 function showAbout(){
