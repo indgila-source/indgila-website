@@ -50,14 +50,26 @@
   #imgA,#imgB{ width:100%; height:100%; object-fit:cover; object-position:center; }
 #imgA.show,#imgB.show{ opacity:1; transition:opacity 300ms ease; }
 
-/* full-bleed video layer on top of images */
 .video{
-  position:absolute; top:50%; left:50%;
-  width:calc(100vw + 2px); height:calc(56.25vw + 2px);     /* +2px overscan kills hairlines */
-  min-width:calc(177.78vh + 2px); min-height:calc(100vh + 2px);
-  transform:translate(-50%,-50%); background:#000; border:0;
-  opacity:0; transition:none; z-index:4; pointer-events:auto;
+  position:absolute;
+  /* tiny overscan prevents 1px seams on some screens */
+  inset:-1px;                              /* bleed 1px on every edge */
+  width:calc(100% + 2px);
+  height:calc(100% + 2px);
+
+  /* fill the viewport like images do */
+  object-fit:cover;
+  object-position:center;
+
+  background:#000; border:0;
+  opacity:0;                               /* you already fade it on in JS */
+  transition:none;
+  z-index:4;                               /* above images, below nav hotspots */
+  pointer-events:auto;                     /* keep center interactive if needed */
 }
+
+/* keep images full-bleed too (leave if already present) */
+#imgA,#imgB{ width:100%; height:100%; object-fit:cover; object-position:center; }
 
 
 /* Center play/pause overlay */
