@@ -462,13 +462,18 @@ function show(i){
 
         const player = getPlayer(nxtF);
         player.play().catch(()=>{});
-        // switch overlay to "pause" look
-        overlay.classList.add('paused');
 
-        // drop images when first frame renders, or after short safety
-        let done=false; const drop=()=>{ if(done) return; done=true; dropImages(); finish(); };
+        // When the first video frame actually renders, drop the images AND hide overlay
+        let done=false;
+        const drop=()=>{ 
+          if(done) return; 
+          done=true; 
+          overlay.style.display = 'none';   // hide play/pause once video is live
+          dropImages(); 
+          finish(); 
+        };
         player.on('play', drop);
-        setTimeout(drop, 900);
+        setTimeout(drop, 900);               // safety if 'play' is slow
       }, { once:true });
       nxtF.src = url;
     };
@@ -493,10 +498,15 @@ function show(i){
         setTimeout(() => {
           buf[active].classList.remove('show');   // hide old image
           active = 1 - active;                    // swap buffers
-          vframes.forEach(f => f.style.opacity = 0);  // hide videos (keep src intact!)
-          primeNextVideo(i);                      // pre-buffer the next video
+
+          // hide video iframes AND pause any audio so nothing keeps playing
+          vframes.forEach(f => { 
+            f.style.opacity = 0; 
+            try { const p = getPlayer(f); p.pause(); } catch {} 
+          });
+
+          primeNextVideo(i);                      // keep next video warm
           overlay.style.display = 'none';
-          hideVimeo();  // hide iframes (do NOT remove src)
           finish();
         }, FADE);
       });
