@@ -375,6 +375,9 @@ let isTransitioning = false, queuedDelta = 0, idx = 0;
 const buf = [document.getElementById('imgA'), document.getElementById('imgB')];
 let active = 0; // 0 or 1
 
+let lastTouchAt = 0;               // timestamp of last touchend
+const TAP_GUARD_MS = 450;          // ignore clicks for ~0.45s after a touch
+
 
 // DOM elements
 const stage = document.getElementById('stage');
@@ -451,7 +454,7 @@ function show(i){
     };
     function cleanup(){
       videoEl.removeEventListener('loadeddata', onReady);
-      videoEl.removeEventListener('canPlay', onCanPlay);
+      videoEl.removeEventListener('canplay', onCanPlay);
       videoEl.removeEventListener('error', onError);
     }
 
@@ -515,12 +518,22 @@ stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { document.body.classList.add('cursor-hidden'); });
 stage.addEventListener('mouseleave', () => { document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity = 0; });
 stage.addEventListener('click', (e) => {
+  // If a touch just happened, ignore this synthetic click
+  if (Date.now() - lastTouchAt < TAP_GUARD_MS) return;
   const right = e.clientX > innerWidth/2;
   requestNav(right ? 1 : -1);
 });
 
-navPrev.onclick = (e)=>{ e.stopPropagation(); requestNav(-1); };
-navNext.onclick = (e)=>{ e.stopPropagation(); requestNav(+1); };
+navPrev.onclick = (e)=>{
+  e.stopPropagation();
+  if (Date.now() - lastTouchAt < TAP_GUARD_MS) return;
+  requestNav(-1);
+};
+navNext.onclick = (e)=>{
+  e.stopPropagation();
+  if (Date.now() - lastTouchAt < TAP_GUARD_MS) return;
+  requestNav(+1);
+};
 navPrev.onmousemove = navNext.onmousemove = updateCursor;
 navPrev.onmouseenter = navNext.onmouseenter = ()=>document.body.classList.add('cursor-hidden');
 navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; };
@@ -555,16 +568,25 @@ window.addEventListener('keydown', (e)=>{
 });
 
 // touch (swipe)
-let startX=null;
-stage.addEventListener('touchstart', (e)=>{ startX = e.touches?.[0]?.clientX ?? null; }, {passive:true});
+let startX = null;
+stage.addEventListener('touchstart', (e)=>{
+  const t = e.touches?.[0]; 
+  startX = t ? t.clientX : null;
+}, { passive:true });
+
 stage.addEventListener('touchend', (e)=>{
-  if (startX==null) return;
-  const endX = e.changedTouches?.[0]?.clientX ?? startX;
+  const t = e.changedTouches?.[0];
+  lastTouchAt = Date.now();                     // <<< mark the touch, so click is ignored
+  if (!t || startX == null) { startX = null; return; }
+
+  const endX = t.clientX;
   const dx = endX - startX;
-  const delta = Math.abs(dx) > 40 ? (dx<0 ? +1 : -1) : (endX > window.innerWidth/2 ? +1 : -1);
+  // swipe if moved enough, otherwise treat as a tap left/right
+  const delta = Math.abs(dx) > 40 ? (dx < 0 ? +1 : -1)
+                                  : (endX > innerWidth/2 ? +1 : -1);
   requestNav(delta);
-  startX=null;
-}, {passive:true});
+  startX = null;
+}, { passive:true });
 
 
 </script>
