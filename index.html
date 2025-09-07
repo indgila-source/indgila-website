@@ -132,6 +132,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   #cursorArrow.click-bump{ transform:translate(-50%,-50%) scale(1.35); }
   @media (hover:none),(pointer:coarse){ #cursorArrow{ display:none !important; } }
+  /* Override for about page - always show cursor */
+  body.show-about #cursorArrow{ display:block !important; }
 
   /* Hide native cursor everywhere in the experience */
   html, body, #stage, #stage *, .intro-left, .caption, .intro-right, .intro-right a {
@@ -526,6 +528,7 @@ function updateCursor(e){
   cursorArrow.style.left = e.clientX + 'px';
   cursorArrow.style.top  = e.clientY + 'px';
   cursorArrow.style.opacity = 1;
+  cursorArrow.style.display = 'block'; // ensure it's visible
 }
 stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { 
@@ -569,6 +572,8 @@ navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remo
 function showAbout(){
   document.body.classList.add('show-about');
   document.body.classList.remove('cursor-hidden'); // ensure cursor is visible on about page
+  cursorArrow.style.display = 'block'; // force cursor to be visible
+  cursorArrow.style.opacity = 1;
   aboutOverlay && aboutOverlay.removeAttribute('hidden');
 }
 function hideAbout(){
