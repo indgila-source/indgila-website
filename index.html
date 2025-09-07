@@ -516,8 +516,13 @@ function show(i){
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
 // Arrow follows the mouse; no pointer lock so you can leave the page freely
 function updateCursor(e){
-  const onRightSide = e.clientX > (innerWidth / 2);
-  cursorArrow.textContent = onRightSide ? 'NEXT' : 'PREV';
+  const isAboutOpen = document.body.classList.contains('show-about');
+  if (isAboutOpen) {
+    cursorArrow.textContent = 'BACK';
+  } else {
+    const onRightSide = e.clientX > (innerWidth / 2);
+    cursorArrow.textContent = onRightSide ? 'NEXT' : 'PREV';
+  }
   cursorArrow.style.left = e.clientX + 'px';
   cursorArrow.style.top  = e.clientY + 'px';
   cursorArrow.style.opacity = 1;
@@ -528,8 +533,14 @@ stage.addEventListener('mouseleave', () => { document.body.classList.remove('cur
 stage.addEventListener('click', (e) => {
   // If a touch just happened, ignore this synthetic click
   if (Date.now() - lastTouchAt < TAP_GUARD_MS) return;
-  const right = e.clientX > innerWidth/2;
-  requestNav(right ? 1 : -1);
+  
+  const isAboutOpen = document.body.classList.contains('show-about');
+  if (isAboutOpen) {
+    hideAbout();
+  } else {
+    const right = e.clientX > innerWidth/2;
+    requestNav(right ? 1 : -1);
+  }
 });
 
 navPrev.onclick = (e)=>{
