@@ -152,6 +152,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     position:fixed; inset:0; background:#000; color:#f2f2f2; z-index:1000; display:none;
     overflow:auto; -webkit-overflow-scrolling: touch;
     padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom));
+    pointer-events: auto; /* ensure it can receive mouse events */
   }
   body.show-about #aboutOverlay{ display:block; }
   #aboutOverlay .col-left, #aboutOverlay .col-right{
@@ -579,6 +580,8 @@ nameEl && nameEl.addEventListener('click', (e)=>{
   if (document.body.classList.contains('show-about')) hideAbout(); else showAbout();
 });
 aboutOverlay && aboutOverlay.addEventListener('click', hideAbout);
+// Add mouse movement to about overlay so cursor updates
+aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
 // Prevent overlay-close when clicking bottom name/email inside the overlay
 aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
   const t = e.target;
