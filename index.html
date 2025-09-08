@@ -134,6 +134,9 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   @media (hover:none),(pointer:coarse){ #cursorArrow{ display:none !important; } }
   /* Override for about page - always show cursor */
   body.show-about #cursorArrow{ display:block !important; }
+  
+  /* --- PATCH: always show custom cursor on About overlay --- */
+  body.show-about #cursorArrow { display:block !important; opacity:1 !important; }
 
   /* Hide native cursor everywhere in the experience */
   html, body, #stage, #stage *, .intro-left, .caption, .intro-right, .intro-right a {
@@ -521,13 +524,14 @@ function updateCursor(e){
   const isAboutOpen = document.body.classList.contains('show-about');
   if (isAboutOpen) {
     cursorArrow.textContent = 'BACK';
+    cursorArrow.style.display = 'block';
+    cursorArrow.style.opacity = 1;
   } else {
     const onRightSide = e.clientX > (innerWidth / 2);
     cursorArrow.textContent = onRightSide ? 'NEXT' : 'PREV';
   }
   cursorArrow.style.left = e.clientX + 'px';
   cursorArrow.style.top  = e.clientY + 'px';
-  cursorArrow.style.opacity = 1;
 }
 stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { 
@@ -635,6 +639,67 @@ function applyRotateMedia(){
 applyRotateMedia();
 window.addEventListener('resize', () => { setTimeout(applyRotateMedia, 150); }, { passive:true });
 window.addEventListener('orientationchange', () => { setTimeout(applyRotateMedia, 250); }, { passive:true });
+
+
+/* >>> PATCH: BACK cursor + overlay behavior <<< */
+
+/* 1) Make cursor say BACK on About, NEXT/PREV otherwise */
+function updateCursor(e){
+  const isAboutOpen = document.body.classList.contains('show-about');
+  cursorArrow.textContent = isAboutOpen
+    ? 'BACK'
+    : (e.clientX > (innerWidth / 2) ? 'NEXT' : 'PREV');
+
+  cursorArrow.style.left = e.clientX + 'px';
+  cursorArrow.style.top  = e.clientY + 'px';
+  cursorArrow.style.display = 'block';
+  cursorArrow.style.opacity = 1;
+}
+
+/* Ensure stage keeps updating cursor when not on About */
+stage.removeEventListener?.('mousemove', updateCursor);
+stage.addEventListener('mousemove', updateCursor);
+
+/* 2) Feed mousemove from the About overlay too (so text follows pointer there) */
+aboutOverlay?.removeEventListener?.('mousemove', updateCursor);
+aboutOverlay?.addEventListener('mousemove', updateCursor);
+
+/* 3) Click anywhere on About overlay => close (except bottom name/email) */
+function closeAboutOnOverlayClick(e){
+  const t = e.target;
+  const exempt = t.closest?.('.bottom-left, .bottom-right');
+  if (exempt) return;       // keep links clickable without closing
+  hideAbout();              // go back to main page
+}
+aboutOverlay?.removeEventListener?.('click', closeAboutOnOverlayClick);
+aboutOverlay?.addEventListener('click', closeAboutOnOverlayClick, { capture:true });
+
+/* 4) Make sure showAbout()/hideAbout() keep cursor visible/normalized */
+const _showAbout = showAbout;
+const _hideAbout = hideAbout;
+
+showAbout = function(){
+  _showAbout?.();
+  document.body.classList.add('show-about');
+  document.body.classList.remove('cursor-hidden'); // unhide custom cursor
+  cursorArrow.style.display = 'block';
+  cursorArrow.style.opacity = 1;
+  aboutOverlay?.removeAttribute('hidden');
+};
+
+hideAbout = function(){
+  _hideAbout?.();
+  document.body.classList.remove('show-about');
+  aboutOverlay?.setAttribute('hidden','');
+};
+
+/* 5) Clicking the name toggles About (idempotent, safe if already wired) */
+nameEl?.addEventListener('click', (e)=>{
+  e.preventDefault(); e.stopPropagation();
+  if (document.body.classList.contains('show-about')) hideAbout();
+  else showAbout();
+});
+/* <<< PATCH END >>> */
 
 
 </script>
