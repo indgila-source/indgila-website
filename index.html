@@ -122,21 +122,24 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   .intro-right{ right:var(--edge); }
   .intro-right a{ color:inherit; text-decoration:underline; pointer-events:auto; }
 
-  /* Custom cursor arrow */
+  /* Custom cursor above everything (overlay is z-index 1000/1001) */
   #cursorArrow{
     position:fixed; left:0; top:0; transform:translate(-50%,-50%);
-    pointer-events:none; z-index:2002;
+    pointer-events:none;
+    z-index:2002;                /* <- ensure it's on top */
     font-size:var(--ui); line-height:1; letter-spacing:.02em; color:#fff;
     mix-blend-mode:difference;
     opacity:0; transition:opacity .15s ease, transform .12s ease;
   }
   #cursorArrow.click-bump{ transform:translate(-50%,-50%) scale(1.35); }
-  @media (hover:none),(pointer:coarse){ #cursorArrow{ display:none !important; } }
-  /* Override for about page - always show cursor */
-  body.show-about #cursorArrow{ display:block !important; }
-  
-  /* --- PATCH: always show custom cursor on About overlay --- */
-  body.show-about #cursorArrow { display:block !important; opacity:1 !important; }
+
+  /* Touch devices hide cursor by default, but About overrides this below */
+  @media (hover:none),(pointer:coarse){
+    #cursorArrow{ display:none !important; }
+  }
+
+  /* On About, always show the custom cursor (wins even on touch) */
+  body.show-about #cursorArrow{ display:block !important; opacity:1 !important; }
 
   /* Hide native cursor everywhere in the experience */
   html, body, #stage, #stage *, .caption, .intro-right, .intro-right a {
@@ -524,18 +527,24 @@ function show(i){
 
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
 // Arrow follows the mouse; no pointer lock so you can leave the page freely
+// Shows NEXT/PREV on main; shows 'X' on About; follows pointer
 function updateCursor(e){
   const isAboutOpen = document.body.classList.contains('show-about');
+
+  // Fallback coords if event is synthetic
+  const x = e?.clientX ?? innerWidth / 2;
+  const y = e?.clientY ?? innerHeight / 2;
+
   if (isAboutOpen) {
     cursorArrow.textContent = 'X';
     cursorArrow.style.display = 'block';
     cursorArrow.style.opacity = 1;
   } else {
-    const onRightSide = e.clientX > (innerWidth / 2);
-    cursorArrow.textContent = onRightSide ? 'NEXT' : 'PREV';
+    cursorArrow.textContent = (x > innerWidth / 2) ? 'NEXT' : 'PREV';
   }
-  cursorArrow.style.left = e.clientX + 'px';
-  cursorArrow.style.top  = e.clientY + 'px';
+
+  cursorArrow.style.left = x + 'px';
+  cursorArrow.style.top  = y + 'px';
 }
 stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { 
@@ -591,14 +600,14 @@ nameEl && nameEl.addEventListener('click', (e)=>{
   e.preventDefault(); e.stopPropagation();
   if (document.body.classList.contains('show-about')) hideAbout(); else showAbout();
 });
-// Add mouse movement to about overlay so cursor updates
+// Update cursor continuously while on the overlay
 aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
-// Keep the cursor visible & updated as soon as the pointer enters the overlay
+
+// As soon as pointer enters the overlay, ensure the cursor is visible + positioned
 aboutOverlay && aboutOverlay.addEventListener('mouseenter', (e) => {
   cursorArrow.style.display = 'block';
   cursorArrow.style.opacity = 1;
-  // synthesize a position if needed (fallback to center)
-  updateCursor(e instanceof MouseEvent ? e : { clientX: innerWidth/2, clientY: innerHeight/2 });
+  updateCursor(e instanceof MouseEvent ? e : null);
 });
 // Click handler: close overlay except when clicking .bottom-left or .bottom-right
 aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
