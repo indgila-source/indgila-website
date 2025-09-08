@@ -527,21 +527,17 @@ function show(i){
 
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
 // Arrow follows the mouse; no pointer lock so you can leave the page freely
-// Shows NEXT/PREV on main; shows 'X' on About; follows pointer
+// Shows NEXT/PREV on main; 'X' on About; ALWAYS makes cursor visible
 function updateCursor(e){
   const isAboutOpen = document.body.classList.contains('show-about');
-
-  // Fallback coords if event is synthetic
   const x = e?.clientX ?? innerWidth / 2;
   const y = e?.clientY ?? innerHeight / 2;
 
-  if (isAboutOpen) {
-    cursorArrow.textContent = 'X';
-    cursorArrow.style.display = 'block';
-    cursorArrow.style.opacity = 1;
-  } else {
-    cursorArrow.textContent = (x > innerWidth / 2) ? 'NEXT' : 'PREV';
-  }
+  cursorArrow.style.display = 'block';   // <-- ensure visible on MAIN too
+  cursorArrow.style.opacity = 1;         // <-- ensure visible on MAIN too
+  cursorArrow.textContent = isAboutOpen
+    ? 'X'
+    : (x > innerWidth / 2 ? 'NEXT' : 'PREV');
 
   cursorArrow.style.left = x + 'px';
   cursorArrow.style.top  = y + 'px';
