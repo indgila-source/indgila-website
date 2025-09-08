@@ -133,13 +133,11 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   #cursorArrow.click-bump{ transform:translate(-50%,-50%) scale(1.35); }
 
-  /* Touch devices hide cursor by default, but About overrides this below */
+  /* Hide the big custom cursor on touch devices (phones/tablets) */
   @media (hover:none),(pointer:coarse){
-    #cursorArrow{ display:none !important; }
+    #cursorArrow{ display:none !important; opacity:0 !important; }
+    body.show-about #cursorArrow{ display:none !important; opacity:0 !important; }
   }
-
-  /* On About, always show the custom cursor (wins even on touch) */
-  body.show-about #cursorArrow{ display:block !important; opacity:1 !important; }
 
   /* Hide native cursor everywhere in the experience */
   html, body, #stage, #stage *, .caption, .intro-right, .intro-right a {
@@ -526,15 +524,19 @@ function show(i){
 
 
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
-// Arrow follows the mouse; no pointer lock so you can leave the page freely
-// Shows NEXT/PREV on main; 'X' on About; ALWAYS makes cursor visible
+// Detect touch-only / coarse-pointer environments (mobile)
+const IS_TOUCH = window.matchMedia('(hover:none), (pointer:coarse)').matches;
+
+// Arrow follows the mouse; disabled on touch
 function updateCursor(e){
+  if (IS_TOUCH) return;   // <-- do nothing on phones/tablets
+
   const isAboutOpen = document.body.classList.contains('show-about');
   const x = e?.clientX ?? innerWidth / 2;
   const y = e?.clientY ?? innerHeight / 2;
 
-  cursorArrow.style.display = 'block';   // <-- ensure visible on MAIN too
-  cursorArrow.style.opacity = 1;         // <-- ensure visible on MAIN too
+  cursorArrow.style.display = 'block';
+  cursorArrow.style.opacity = 1;
   cursorArrow.textContent = isAboutOpen
     ? 'X'
     : (x > innerWidth / 2 ? 'NEXT' : 'PREV');
@@ -584,8 +586,7 @@ navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remo
 function showAbout(){
   document.body.classList.add('show-about');
   document.body.classList.remove('cursor-hidden');
-  cursorArrow.style.display = 'block';
-  cursorArrow.style.opacity = 1;
+  if (!IS_TOUCH){ cursorArrow.style.display = 'block'; cursorArrow.style.opacity = 1; }
   aboutOverlay && aboutOverlay.removeAttribute('hidden');
 }
 function hideAbout(){
@@ -601,8 +602,7 @@ aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
 
 // As soon as pointer enters the overlay, ensure the cursor is visible + positioned
 aboutOverlay && aboutOverlay.addEventListener('mouseenter', (e) => {
-  cursorArrow.style.display = 'block';
-  cursorArrow.style.opacity = 1;
+  if (!IS_TOUCH){ cursorArrow.style.display = 'block'; cursorArrow.style.opacity = 1; }
   updateCursor(e instanceof MouseEvent ? e : null);
 });
 // Click handler: close overlay except when clicking .bottom-left or .bottom-right
