@@ -125,7 +125,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* Custom cursor arrow */
   #cursorArrow{
     position:fixed; left:0; top:0; transform:translate(-50%,-50%);
-    pointer-events:none; z-index:999;
+    pointer-events:none; z-index:2002;
     font-size:var(--ui); line-height:1; letter-spacing:.02em; color:#fff;
     mix-blend-mode:difference;
     opacity:0; transition:opacity .15s ease, transform .12s ease;
@@ -593,6 +593,13 @@ nameEl && nameEl.addEventListener('click', (e)=>{
 });
 // Add mouse movement to about overlay so cursor updates
 aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
+// Keep the cursor visible & updated as soon as the pointer enters the overlay
+aboutOverlay && aboutOverlay.addEventListener('mouseenter', (e) => {
+  cursorArrow.style.display = 'block';
+  cursorArrow.style.opacity = 1;
+  // synthesize a position if needed (fallback to center)
+  updateCursor(e instanceof MouseEvent ? e : { clientX: innerWidth/2, clientY: innerHeight/2 });
+});
 // Click handler: close overlay except when clicking .bottom-left or .bottom-right
 aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
   const t = e.target;
