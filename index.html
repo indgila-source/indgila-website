@@ -528,7 +528,6 @@ function updateCursor(e){
   cursorArrow.style.left = e.clientX + 'px';
   cursorArrow.style.top  = e.clientY + 'px';
   cursorArrow.style.opacity = 1;
-  cursorArrow.style.display = 'block'; // ensure it's visible
 }
 stage.addEventListener('mousemove', updateCursor);
 stage.addEventListener('mouseenter', () => { 
@@ -571,8 +570,8 @@ navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remo
 /* ---------- About overlay toggle ---------- */
 function showAbout(){
   document.body.classList.add('show-about');
-  document.body.classList.remove('cursor-hidden'); // ensure cursor is visible on about page
-  cursorArrow.style.display = 'block'; // force cursor to be visible
+  document.body.classList.remove('cursor-hidden');
+  cursorArrow.style.display = 'block';
   cursorArrow.style.opacity = 1;
   aboutOverlay && aboutOverlay.removeAttribute('hidden');
 }
@@ -584,16 +583,17 @@ nameEl && nameEl.addEventListener('click', (e)=>{
   e.preventDefault(); e.stopPropagation();
   if (document.body.classList.contains('show-about')) hideAbout(); else showAbout();
 });
-aboutOverlay && aboutOverlay.addEventListener('click', hideAbout);
 // Add mouse movement to about overlay so cursor updates
 aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
-// Prevent overlay-close when clicking bottom name/email inside the overlay
+// Click handler: close overlay except when clicking .bottom-left or .bottom-right
 aboutOverlay && aboutOverlay.addEventListener('click', (e)=>{
   const t = e.target;
   if (t.closest && (t.closest('.bottom-left') || t.closest('.bottom-right'))){
     e.stopPropagation();
+  } else {
+    hideAbout();
   }
-}, true);
+});
 window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideAbout(); });
 
 // keyboard
