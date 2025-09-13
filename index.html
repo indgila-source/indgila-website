@@ -397,6 +397,9 @@ function buildSequence(list){
   return seq;
 }
 let seq = buildSequence(slides);
+console.log('Total slides:', slides.length);
+console.log('Sequence length:', seq.length);
+console.log('New images in sequence:', seq.filter(s => s.src.includes('027') || s.src.includes('028') || s.src.includes('029')));
 
 // --- timing & state ---
 const FADE = 300;
@@ -498,6 +501,7 @@ function show(i){
 
     // image path: load into the hidden buffer, then crossfade
   if (cur.type === 'image') {
+    console.log('Loading image:', cur.src);
     const nextEl = buf[1 - active];
     const loader = new Image(); loader.src = cur.src;
     const ready = loader.decode ? loader.decode().catch(()=>{})
