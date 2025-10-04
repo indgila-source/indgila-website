@@ -230,10 +230,12 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .bottom-left{
       display: none;
     }
-    /* Make email left-aligned and sticky at bottom */
+    /* Make email fixed at bottom left */
     #aboutOverlay .bottom-right{
-      position:sticky; 
+      position:fixed; 
       bottom: calc(var(--edge) + var(--safe-bottom)); 
+      left: var(--edge);
+      right: auto;
       top: auto;
       float: none;
       text-align: left;
@@ -352,6 +354,11 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       <li>Art Directors Club New York</li>
       <li>Effie Awards</li>
       <li>Red Dot Design Awards</li>
+    </ul>
+
+    <h4>Instagram:</h4>
+    <ul>
+      <li><a href="https://www.instagram.com/indgila/" target="_blank">@indgila</a></li>
     </ul>
   </div>
   <div class="bottom-left">INDGILA SAMAD ALI</div>
