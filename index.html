@@ -371,7 +371,7 @@ const slides = [
   { type:'image', src:'images/010.jpg', description:'IDENTITY FOR HELP.APP', credits:'× MASHA VDOVINA, KATE MAKAROWSKA' },
   { type:'image', src:'images/011.jpg', description:'IDENTITY FOR АСК', credits:'' },
   { type:'image', src:'images/012.jpg', description:'SPATIAL DESIGN FOR SORA SELECT NEW YORK', credits:'× OPENAI DESIGN STUDIO' },
-  { type:'image', src:'images/013.jpg', description:'IDENTITY FOR SORA SELECTS LOS ANGELES', credits:'× OPENAI DESIGN STUDIO, BRAIN DEAD STUDIO' },
+  { type:'image', src:'images/013.jpg', description:'IDENTITY FOR SORA SELECT LOS ANGELES', credits:'× OPENAI DESIGN STUDIO' },
   { type:'image', src:'images/014.jpg', caption:'MIND GARDEN.' },
   { type:'image', src:'images/015.jpg', description:'IDENTITY FOR COLLINS TREEHAUS', credits:'× BRIAN COLLINS' },
   { type:'image', src:'images/016.jpg', description:'EXHIBITION DESIGN', credits:'× GROUND SOLYANKA' },
@@ -381,7 +381,7 @@ const slides = [
   { type:'image', src:'images/020.jpg', description:'IDENTITY FOR FORKHEAD LAB', credits:'× TSENTSIPER' },
   { type:'image', src:'images/021.jpg', description:'IDENTITY FOR RCAW', credits:'' },
   { type:'image', src:'images/022.jpg', description:'RISO WORKSHOP WITH KIDS', credits:'× LUMINARY CENTER' },
-  { type:'image', src:'images/023.jpg', description:'IDENTITY FOR SORA SELECTS NEW YORK', credits:'× OPENAI DESIGN STUDIO, METROGRAPH' },
+  { type:'image', src:'images/023.jpg', description:'IDENTITY FOR SORA SELECTS NEW YORK', credits:'× OPENAI DESIGN STUDIO' },
   { type:'image', src:'images/024.jpg', description:'OPENAI BRAND IDENTITY', credits:'× OPENAI DESIGN STUDIO, STUDIO DUMBAR' },
   { type:'image', src:'images/025.jpg', description:'OPENAI DEUTSCHLAND', credits:'× OPENAI DESIGN STUDIO' },
   { type:'image', src:'images/026.jpg', description:'MUSE GROUP BRAND IDENTITY', credits:'× COLLINS' },
@@ -431,10 +431,6 @@ const projectDescriptionEl = document.getElementById('projectDescription');
 const creditsEl = document.getElementById('credits');
 const cursorArrow = document.getElementById('cursorArrow');
 
-console.log('DOM elements found:', {
-  projectDescriptionEl: !!projectDescriptionEl,
-  creditsEl: !!creditsEl
-});
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
 const overlay = document.getElementById('videoOverlay');
@@ -447,7 +443,6 @@ const navNext  = document.getElementById('navNext');
 
 // helper: set project description and credits
 function setProjectInfo(description, credits){ 
-  console.log('Setting project info:', {description, credits});
   projectDescriptionEl.textContent = description || ''; 
   creditsEl.textContent = credits || ''; 
 }
@@ -552,6 +547,7 @@ function show(i){
 // init: show first slide without animation
 (function init(){
   const first = seq[idx];
+  setProjectInfo(first.description || first.caption || '', first.credits || '');
   if(first.type==='mp4'){ show(idx); }
   else {
     buf[active].src = first.src;
