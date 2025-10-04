@@ -226,11 +226,18 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .col-right{
       position:static; max-width:none; text-align:left; margin: 0 0 20px 0;
     }
-    #aboutOverlay .bottom-left,
-    #aboutOverlay .bottom-right{
-      position:sticky; bottom: calc(var(--edge) + var(--safe-bottom)); top: auto;
+    /* Hide name on mobile */
+    #aboutOverlay .bottom-left{
+      display: none;
     }
-    #aboutOverlay .bottom-right{ float:right; }
+    /* Make email left-aligned and sticky at bottom */
+    #aboutOverlay .bottom-right{
+      position:sticky; 
+      bottom: calc(var(--edge) + var(--safe-bottom)); 
+      top: auto;
+      float: none;
+      text-align: left;
+    }
 
     /* Media: default mobile behavior (letterboxed contain) */
     .layer{ object-fit: contain; object-position: center center; background:#000; }
