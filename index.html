@@ -430,6 +430,11 @@ const stage = document.getElementById('stage');
 const projectDescriptionEl = document.getElementById('projectDescription');
 const creditsEl = document.getElementById('credits');
 const cursorArrow = document.getElementById('cursorArrow');
+
+console.log('DOM elements found:', {
+  projectDescriptionEl: !!projectDescriptionEl,
+  creditsEl: !!creditsEl
+});
 const aboutOverlay = document.getElementById('aboutOverlay');
 const nameEl = document.querySelector('.intro-left');
 const overlay = document.getElementById('videoOverlay');
@@ -442,6 +447,7 @@ const navNext  = document.getElementById('navNext');
 
 // helper: set project description and credits
 function setProjectInfo(description, credits){ 
+  console.log('Setting project info:', {description, credits});
   projectDescriptionEl.textContent = description || ''; 
   creditsEl.textContent = credits || ''; 
 }
