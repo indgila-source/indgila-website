@@ -114,10 +114,10 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   .intro-left{ left:var(--edge); pointer-events:auto; cursor:pointer; z-index:15; }
   .project-description{
-    left:var(--edge);
-    bottom:calc(var(--edge) + var(--safe-bottom) + 1.5em);
+    right:var(--edge);
+    bottom:calc(var(--edge) + var(--safe-bottom));
     max-width:min(50vw, 400px);
-    text-align:left;
+    text-align:right;
     white-space:normal;
   }
   .credits{
@@ -198,16 +198,16 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     /* Slightly larger tap targets and breathing room */
     .intro-left, .project-description, .credits{ line-height: 1.3; }
     .intro-left{ left:12px; }
-    /* Mobile: move project description to top-left */
+    /* Mobile: move project description to top-right */
     .project-description{
       top: calc(var(--edge) + var(--safe-top));
       bottom: auto;
-      left: var(--edge);
-      right: auto;
+      left: auto;
+      right: var(--edge);
       transform: none;
-      text-align: left;
+      text-align: right;
       max-width: calc(100vw - 2 * var(--edge));
-      padding: 0 8px 0 0;
+      padding: 0 0 0 8px;
     }
     /* Mobile: move credits below project description */
     .credits{
