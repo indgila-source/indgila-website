@@ -184,14 +184,15 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   #aboutOverlay .col-left{ left:var(--edge); max-width:420px; }
   #aboutOverlay .col-right{ right:var(--edge); text-align:right; max-width:260px; line-height:1.2; }
-  #aboutOverlay .bottom-left, #aboutOverlay .bottom-right{
+  #aboutOverlay .bottom-left, #aboutOverlay .bottom-center, #aboutOverlay .bottom-right{
     position:fixed; bottom:calc(var(--edge) + var(--safe-bottom)); z-index:1001;
     font-size:var(--ui); line-height:1.2; letter-spacing:.02em; text-transform:uppercase;
     color:#f2f2f2; mix-blend-mode:normal; pointer-events:auto;
   }
   #aboutOverlay .bottom-left{ left:var(--edge); }
+  #aboutOverlay .bottom-center{ left:50%; transform:translateX(-50%); }
   #aboutOverlay .bottom-right{ right:var(--edge); }
-  #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
+  #aboutOverlay .bottom-center a, #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
   #aboutOverlay h4{ margin:16px 0 6px; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
   #aboutOverlay .col-right h4:first-child{ margin-top:0; }
   #aboutOverlay p{ margin:0 0 10px; }
@@ -237,15 +238,24 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .bottom-left{
       display: none;
     }
-    /* Make email fixed at bottom left */
+    /* Make email fixed at bottom center */
+    #aboutOverlay .bottom-center{
+      position:fixed; 
+      bottom: calc(var(--edge) + var(--safe-bottom)); 
+      left: 50%;
+      right: auto;
+      top: auto;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    /* Make Instagram fixed at bottom right */
     #aboutOverlay .bottom-right{
       position:fixed; 
       bottom: calc(var(--edge) + var(--safe-bottom)); 
-      left: var(--edge);
-      right: auto;
+      left: auto;
+      right: var(--edge);
       top: auto;
-      float: none;
-      text-align: left;
+      text-align: right;
     }
 
     /* Media: default mobile behavior (letterboxed contain) */
@@ -363,13 +373,10 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       <li>EFFIE AWARDS — GRAND PRIX</li>
       <li>RED DOT DESIGN AWARD(S)</li>
     </ul>
-
-    <ul>
-      <li><a href="https://www.instagram.com/indgila/" target="_blank">@INDGILA</a></li>
-    </ul>
   </div>
   <div class="bottom-left">INDGILA SAMAD ALI</div>
-  <div class="bottom-right"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
+  <div class="bottom-center"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
+  <div class="bottom-right"><a href="https://www.instagram.com/indgila/" target="_blank" style="color: white;">@INDGILA</a></div>
 </div>
 
 <script>
