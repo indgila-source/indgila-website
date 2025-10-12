@@ -202,9 +202,16 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   #aboutOverlay li{ margin:0 0 4px; }
   /* Consistent item spacing on right column lists, keep spacing after titles via h4 margins */
   #aboutOverlay .col-right ul li{ line-height:1.2; margin:0; }
+  
+  /* Bio line break control - hide mobile breaks on desktop */
+  .br-mobile { display: none; }
+  .br-desktop { display: inline; }
 
   /* Mobile adjustments */
   @media (max-width: 768px){
+    /* Show mobile breaks, hide desktop breaks */
+    .br-mobile { display: inline; }
+    .br-desktop { display: none; }
     /* Match bio line spacing */
     .intro-left, .project-description, .credits{ line-height: 1.2; }
     .intro-left{ left:12px; }
@@ -376,14 +383,13 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 <!-- About overlay -->
 <div id="aboutOverlay">
   <div class="col-left">
-    <p>INDGILA SAMAD ALI IS A MOSCOW-BORN, SAN FRANCISCO–<br>
-BASED DESIGNER AND ARTIST WITH PERSIAN ROOTS.<br>
-SHE BUILDS VISUAL SYSTEMS THROUGH GRAPHIC LANGUAGES,<br>
-TYPOGRAPHY, ART DIRECTION AND SPATIAL DESIGN, EXPLORING<br>
-HOW DESIGN CAN TURN IDEAS INTO EXPERIENCES THAT PEOPLE<br>
-CAN FEEL AND CONNECT WITH.</p>
+    <p>INDGILA SAMAD ALI IS A MOSCOW-BORN,<br class="br-mobile"> SAN FRANCISCO–<br class="br-desktop">
+BASED DESIGNER AND<br class="br-mobile"> ARTIST WITH PERSIAN ROOTS.<br>
+SHE BUILDS VISUAL SYSTEMS THROUGH<br class="br-mobile"> GRAPHIC LANGUAGES,<br class="br-desktop"> TYPOGRAPHY,<br class="br-mobile">
+ART DIRECTION AND SPATIAL DESIGN,<br class="br-desktop"> EXPLORING<br class="br-mobile"> HOW DESIGN CAN TURN IDEAS<br class="br-mobile">
+INTO EXPERIENCES THAT PEOPLE<br class="br-mobile"> CAN FEEL AND CONNECT WITH.</p>
     <p>CURRENTLY AT OPENAI.<br>
-PREVIOUSLY DESIGN DIRECTOR AT COLLINS NEW YORK.</p>
+PREVIOUSLY DESIGN DIRECTOR<br class="br-mobile"> AT COLLINS NEW YORK.</p>
   </div>
   <div class="col-right">
     <h4>COLLABORATIONS:</h4>
