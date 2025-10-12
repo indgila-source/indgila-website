@@ -164,14 +164,19 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
   /* About overlay */
   #aboutOverlay{
-    position:fixed; inset:0; background:#000; color:#f2f2f2; z-index:1000; display:none;
+    position:fixed; inset:0; background:#000; color:#f2f2f2; z-index:1000; 
     overflow:auto; -webkit-overflow-scrolling: touch;
     padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom));
-    pointer-events: auto; /* ensure it can receive mouse events */
+    pointer-events: none; /* block pointer events when hidden */
     opacity: 0;
     transition: opacity 300ms ease;
+    visibility: hidden;
   }
-  body.show-about #aboutOverlay{ display:block; opacity: 1; }
+  body.show-about #aboutOverlay{ 
+    opacity: 1; 
+    pointer-events: auto;
+    visibility: visible;
+  }
   #aboutOverlay .col-left, #aboutOverlay .col-right{
     position:fixed; top:calc(var(--edge) + var(--safe-top)); font-size:var(--ui); line-height:1.2; letter-spacing:.01em;
     font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
@@ -314,7 +319,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 <div id="cursorArrow" aria-hidden="true"></div>
 
 <!-- About overlay -->
-<div id="aboutOverlay" hidden>
+<div id="aboutOverlay">
   <div class="col-left">
     <p>INDGILA SAMAD ALI IS A MOSCOW-BORN, SAN FRANCISCO–BASED DESIGNER AND ARTIST WITH PERSIAN ROOTS. WORKING ACROSS GRAPHIC ARTS, TYPOGRAPHY, ART DIRECTION AND SPATIAL DESIGN, SHE EXPLORES HOW RATIONAL STRUCTURE AND EMOTIONAL EXPRESSION CAN MERGE WITHIN VISUAL SYSTEMS THAT CREATE CONNECTION.</p>
     <p>CURRENTLY AT OPENAI. PREVIOUSLY DESIGN DIRECTOR AT COLLINS NEW YORK.</p>
@@ -638,18 +643,13 @@ navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remo
 function showAbout(){
   document.body.classList.remove('cursor-hidden');
   if (!IS_TOUCH){ cursorArrow.style.display = 'block'; cursorArrow.style.opacity = 1; }
-  aboutOverlay && aboutOverlay.removeAttribute('hidden');
-  // Trigger fade-in after display is set
+  // Trigger fade-in
   requestAnimationFrame(() => {
     document.body.classList.add('show-about');
   });
 }
 function hideAbout(){
   document.body.classList.remove('show-about');
-  // Wait for fade-out transition to complete before hiding
-  setTimeout(() => {
-    aboutOverlay && aboutOverlay.setAttribute('hidden','');
-  }, 300);
 }
 nameEl && nameEl.addEventListener('click', (e)=>{
   e.preventDefault(); e.stopPropagation();
