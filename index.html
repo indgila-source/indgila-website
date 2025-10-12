@@ -172,6 +172,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     transition: opacity 300ms ease;
     visibility: hidden;
   }
+  /* Hide mobile email on desktop */
+  .mobile-email { display: none; }
   body.show-about #aboutOverlay{ 
     opacity: 1; 
     pointer-events: auto;
@@ -229,25 +231,38 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       padding: 0 8px 0 0;
     }
 
-    /* Stack overlay content and let it scroll */
+    /* Keep desktop layout on mobile - columns side by side */
     #aboutOverlay .col-left,
     #aboutOverlay .col-right{
-      position:static; max-width:none; text-align:left; margin: 0 0 20px 0;
+      position:fixed; 
+      top:calc(var(--edge) + var(--safe-top)); 
+      font-size:var(--ui); 
+      line-height:1.2; 
+      letter-spacing:.01em;
+      font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      text-transform:uppercase; 
+      mix-blend-mode:normal;
+      max-width: calc(50vw - var(--edge) - 8px);
     }
+    #aboutOverlay .col-left{ 
+      left:var(--edge); 
+      text-align:left;
+    }
+    #aboutOverlay .col-right{ 
+      right:var(--edge); 
+      text-align:right;
+    }
+    
     /* Hide name on mobile */
     #aboutOverlay .bottom-left{
       display: none;
     }
-    /* Make email fixed at bottom center */
+    
+    /* Hide center email on mobile */
     #aboutOverlay .bottom-center{
-      position:fixed; 
-      bottom: calc(var(--edge) + var(--safe-bottom)); 
-      left: 50%;
-      right: auto;
-      top: auto;
-      transform: translateX(-50%);
-      text-align: center;
+      display: none;
     }
+    
     /* Make Instagram fixed at bottom right */
     #aboutOverlay .bottom-right{
       position:fixed; 
@@ -256,6 +271,29 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       right: var(--edge);
       top: auto;
       text-align: right;
+    }
+    
+    /* Show mobile email on mobile */
+    .mobile-email { display: block; }
+    
+    /* Mobile email positioning */
+    #aboutOverlay .mobile-email {
+      position: fixed;
+      bottom: calc(var(--edge) + var(--safe-bottom) + 1.5em);
+      left: var(--edge);
+      font-size: var(--ui);
+      line-height: 1.2;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: #f2f2f2;
+      mix-blend-mode: normal;
+      pointer-events: auto;
+      z-index: 1001;
+    }
+    
+    /* Add bottom padding to bio content to prevent collision with fixed elements */
+    #aboutOverlay {
+      padding-bottom: calc(var(--edge) + var(--safe-bottom) + 4em);
     }
 
     /* Media: default mobile behavior (letterboxed contain) */
@@ -377,6 +415,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   <div class="bottom-left">INDGILA SAMAD ALI</div>
   <div class="bottom-center"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
   <div class="bottom-right"><a href="https://www.instagram.com/indgila/" target="_blank" style="color: white;">@INDGILA</a></div>
+  <div class="mobile-email"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
 </div>
 
 <script>
