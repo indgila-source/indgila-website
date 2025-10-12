@@ -265,24 +265,25 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       display: none;
     }
     
-    /* Make Instagram fixed at bottom right */
+    /* Make Instagram flow after content (not fixed) */
     #aboutOverlay .bottom-right{
-      position:fixed; 
-      bottom: calc(var(--edge) + var(--safe-bottom)); 
+      position: static;
+      bottom: auto;
       left: auto;
-      right: var(--edge);
+      right: auto;
       top: auto;
-      text-align: right;
+      text-align: left;
+      margin: 2em var(--edge) 0 var(--edge);
     }
     
     /* Show mobile email on mobile */
     .mobile-email { display: block; }
     
-    /* Mobile email positioning */
+    /* Mobile email positioning - flow after Instagram */
     #aboutOverlay .mobile-email {
-      position: fixed;
-      bottom: calc(var(--edge) + var(--safe-bottom) + 1.5em);
-      left: var(--edge);
+      position: static;
+      bottom: auto;
+      left: auto;
       font-size: var(--ui);
       line-height: 1.2;
       letter-spacing: .02em;
@@ -291,11 +292,12 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       mix-blend-mode: normal;
       pointer-events: auto;
       z-index: 1001;
+      margin: 0.5em var(--edge) 0 var(--edge);
     }
     
-    /* Add padding to bio content for vertical layout and prevent collision with fixed elements */
+    /* Add padding to bio content for vertical layout */
     #aboutOverlay {
-      padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom) + 4em) var(--edge);
+      padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom)) var(--edge);
     }
 
     /* Media: default mobile behavior (letterboxed contain) */
