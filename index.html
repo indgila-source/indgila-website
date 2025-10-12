@@ -244,8 +244,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       text-transform:uppercase; 
       mix-blend-mode:normal;
-      max-width: calc(100vw - 2 * var(--edge));
-      margin: 0 var(--edge);
+      max-width: calc(100vw - 2 * calc(var(--edge) + var(--safe-top)));
+      margin: 0 calc(var(--edge) + var(--safe-top));
       text-align: left;
     }
     #aboutOverlay .col-left{ 
@@ -273,7 +273,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       right: auto;
       top: auto;
       text-align: left;
-      margin: 2em var(--edge) 0 var(--edge);
+      margin: 2em calc(var(--edge) + var(--safe-top)) 0 calc(var(--edge) + var(--safe-top));
     }
     
     /* Show mobile email on mobile */
@@ -288,11 +288,14 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       line-height: 1.2;
       letter-spacing: .02em;
       text-transform: uppercase;
-      color: #f2f2f2;
+      color: #ffffff;
       mix-blend-mode: normal;
       pointer-events: auto;
       z-index: 1001;
-      margin: 0.5em var(--edge) 0 var(--edge);
+      margin: 0 calc(var(--edge) + var(--safe-top));
+    }
+    #aboutOverlay .mobile-email a {
+      color: #ffffff;
     }
     
     /* Add padding to bio content for vertical layout */
