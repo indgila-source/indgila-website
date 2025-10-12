@@ -231,26 +231,28 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       padding: 0 8px 0 0;
     }
 
-    /* Keep desktop layout on mobile - columns side by side */
+    /* Stack bio content vertically on mobile - everything left aligned */
     #aboutOverlay .col-left,
     #aboutOverlay .col-right{
-      position:fixed; 
-      top:calc(var(--edge) + var(--safe-top)); 
+      position: static; 
+      top: auto; 
+      left: auto;
+      right: auto;
       font-size:var(--ui); 
       line-height:1.2; 
       letter-spacing:.01em;
       font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       text-transform:uppercase; 
       mix-blend-mode:normal;
-      max-width: calc(50vw - var(--edge) - 8px);
+      max-width: calc(100vw - 2 * var(--edge));
+      margin: 0 var(--edge);
+      text-align: left;
     }
     #aboutOverlay .col-left{ 
-      left:var(--edge); 
-      text-align:left;
+      margin-bottom: 2em;
     }
     #aboutOverlay .col-right{ 
-      right:var(--edge); 
-      text-align:right;
+      text-align: left;
     }
     
     /* Hide name on mobile */
@@ -291,9 +293,9 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       z-index: 1001;
     }
     
-    /* Add bottom padding to bio content to prevent collision with fixed elements */
+    /* Add padding to bio content for vertical layout and prevent collision with fixed elements */
     #aboutOverlay {
-      padding-bottom: calc(var(--edge) + var(--safe-bottom) + 4em);
+      padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom) + 4em) var(--edge);
     }
 
     /* Media: default mobile behavior (letterboxed contain) */
