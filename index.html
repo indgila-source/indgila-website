@@ -470,6 +470,23 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
   
 </style>
+
+<style id="bio-overrides">
+  /* force caps always */
+  #aboutOverlay #bio .bio-text { text-transform: uppercase !important; }
+
+  /* mobile/tablet: natural wrapping */
+  @media (max-width: 900px){
+    #aboutOverlay #bio .bio-text .l   { display: inline !important; }
+    #aboutOverlay #bio .bio-text .gap { display: inline !important; }
+  }
+
+  /* desktop: each line is a block (no mid-line reflow from other rules) */
+  @media (min-width: 901px){
+    #aboutOverlay #bio .bio-text .l   { display: block !important; }
+    #aboutOverlay #bio .bio-text .gap { display: block !important; height: 1.6em; }
+  }
+</style>
 </head>
 <body>
 
