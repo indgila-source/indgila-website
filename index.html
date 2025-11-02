@@ -232,21 +232,39 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   
   /* Bio text styling */
   #aboutOverlay #bio {
-    position:fixed; top:calc(var(--edge) + var(--safe-top)); left:var(--edge);
+    position:fixed; top:calc(var(--edge) + var(--safe-top)); left:0; right:0;
     font-size:var(--ui); line-height:1.2; letter-spacing:.01em;
     font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    max-width:420px;
   }
-  #aboutOverlay .bio-text { text-transform: uppercase !important; }
   
-  /* default: mobile/tablet wrap naturally */
-  .bio-text .l{ display:inline; }
-  .bio-text .gap{ display:inline; }
+  /* --- BIO DESKTOP WIDTH + EXACT LINES --- */
+  #aboutOverlay .bio-text{
+    /* make the block wide enough on desktop */
+    max-width: 1200px !important;   /* increase if you want even longer lines */
+    margin: 0 auto;                 /* center inside the overlay */
+    line-height: 1.18;              /* match your mock's rhythm */
+  }
 
-  /* desktop: force exact lines */
   @media (min-width: 901px){
-    .bio-text .l{ display:block; }
-    .bio-text .gap{ display:block; height:1.6em; }
+    /* each line is its own block on desktop = no unintended wraps */
+    #aboutOverlay .bio-text .l{ display:block; }
+    #aboutOverlay .bio-text .gap{ display:block; height:1.6em; }
+  }
+
+  /* on mobile/tablet, allow natural wrapping */
+  @media (max-width: 900px){
+    #aboutOverlay .bio-text .l{ display:inline; }
+    #aboutOverlay .bio-text .gap{ display:inline; }
+  }
+
+  /* keep all-caps */
+  #aboutOverlay .bio-text{ text-transform: uppercase !important; }
+  
+  /* override narrow column width constraints */
+  #aboutOverlay .col-left,
+  #aboutOverlay .col-right{
+    max-width: none !important;
+    width: auto !important;
   }
   
   /* Bio line break control - hide mobile breaks on desktop */
