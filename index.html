@@ -451,6 +451,23 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     line-height: 1.18;
   }
 
+  /* --- BIO: FORCE EXACT LINES ON DESKTOP, NATURAL WRAP ON MOBILE --- */
+
+  /* Mobile/tablet: natural wrapping */
+  @media (max-width: 900px){
+    #aboutOverlay #bio .bio-text .l   { display: inline !important; }
+    #aboutOverlay #bio .bio-text .gap { display: inline !important; }
+  }
+
+  /* Desktop: each line is its own block */
+  @media (min-width: 901px){
+    #aboutOverlay #bio .bio-text .l   { display: block !important; }
+    #aboutOverlay #bio .bio-text .gap { display: block !important; height: 1.6em; }
+  }
+
+  /* Keep caps */
+  #aboutOverlay #bio .bio-text { text-transform: uppercase !important; }
+
   
 </style>
 </head>
