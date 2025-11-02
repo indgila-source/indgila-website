@@ -411,6 +411,45 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
         height: calc(100vw + 2px);
       }
     }
+
+    /* Hide stage UI when About is open (mobile) */
+    body.show-about .intro-left,
+    body.show-about .project-description,
+    body.show-about .credits { 
+      display: none !important; 
+    }
+
+    /* Keep the overlay pinned full-screen and scrollable on mobile */
+    #aboutOverlay{
+      position: fixed;
+      inset: 0;
+      background: #000;
+      overflow: auto;
+      padding: calc(var(--edge) + var(--safe-top)) 16px calc(var(--edge) + var(--safe-bottom));
+      z-index: 1000;
+    }
+
+    /* Make all overlay blocks flow (no fixed positioning) on mobile */
+    #aboutOverlay #bio,
+    #aboutOverlay .col-right,
+    #aboutOverlay .bottom-right,
+    #aboutOverlay .mobile-email{
+      position: static !important;
+      top: auto !important; left: auto !important; right: auto !important;
+      max-width: 100% !important;
+      text-align: left !important;
+      margin: 0 !important;
+    }
+
+    /* Bio text: keep natural mobile wrapping + comfortable rhythm */
+    #aboutOverlay .bio-text{ line-height: 1.2; }
+    #aboutOverlay .bio-text .l   { display: inline !important; }
+    #aboutOverlay .bio-text .gap { display: inline !important; }
+
+    /* Small phones: slightly tighter side padding to avoid overflow */
+    @media (max-width: 380px){
+      #aboutOverlay{ padding-left: 12px; padding-right: 12px; }
+    }
   }
 
   /* Respect reduced motion */
