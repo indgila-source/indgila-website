@@ -274,7 +274,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   .desktop-only { display: inline; }
 
   /* Mobile adjustments */
-  @media (max-width: 768px){
+  @media (max-width: 1024px){
     /* Show mobile breaks, hide desktop breaks */
     .br-mobile { display: inline; }
     .br-desktop { display: none; }
@@ -509,7 +509,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* =========================
      MOBILE: ONE-COLUMN OVERLAY
      ========================= */
-  @media (max-width: 900px){
+  @media (max-width: 1024px){
 
     /* Hide stage UI while About is open */
     body.show-about .intro-left,
@@ -1003,9 +1003,9 @@ stage.addEventListener('touchend', (e)=>{
 
 /* ---------- Mobile rotation handling ---------- */
 function applyRotateMedia(){
-  const isPhone = window.matchMedia('(max-width: 768px)').matches;
+  const isTabletOrPhone = window.matchMedia('(max-width: 1024px)').matches;
   const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-  document.body.classList.toggle('rotate-media', isPhone && isPortrait);
+  document.body.classList.toggle('rotate-media', isTabletOrPhone && isPortrait);
 }
 
 // run once at startup, and again after resize/orientation change
