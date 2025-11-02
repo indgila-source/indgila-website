@@ -421,6 +421,19 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* Hide native cursor when hovering the stage (toggled by JS) */
   .cursor-hidden, .cursor-hidden * { cursor: none !important; }
 
+  /* Bio section alignment adjustments */
+  #aboutOverlay .col-left,
+  #aboutOverlay #bio,
+  #aboutOverlay .bio-text {
+    margin-left: 0 !important;       /* remove extra gap */
+    padding-left: 2vw !important;    /* small consistent inset like other text blocks */
+    max-width: 1200px !important;    /* keep desktop readable width */
+  }
+
+  #aboutOverlay .col-left { 
+    width: auto !important;
+  }
+
   
 </style>
 </head>
