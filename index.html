@@ -506,6 +506,59 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* Keep caps */
   #aboutOverlay #bio .bio-text { text-transform: uppercase !important; }
 
+  /* =========================
+     MOBILE: ONE-COLUMN OVERLAY
+     ========================= */
+  @media (max-width: 900px){
+
+    /* Hide stage UI while About is open */
+    body.show-about .intro-left,
+    body.show-about .project-description,
+    body.show-about .credits{
+      display:none !important;
+    }
+
+    /* Make overlay a scrollable page */
+    #aboutOverlay{
+      position:fixed;
+      inset:0;
+      background:#000;
+      overflow:auto;
+      /* top/bottom include safe areas */
+      padding: calc(var(--edge) + var(--safe-top)) 16px calc(var(--edge) + var(--safe-bottom));
+      display:block;                 /* no side-by-side layout */
+      z-index:1000;
+    }
+
+    /* One column: everything inside flows top → bottom */
+    #aboutOverlay #bio,
+    #aboutOverlay .col-left,
+    #aboutOverlay .col-right,
+    #aboutOverlay .bottom-right,
+    #aboutOverlay .mobile-email{
+      position:static !important;
+      top:auto !important; left:auto !important; right:auto !important;
+      width:100% !important;
+      max-width:100% !important;
+      margin:0 0 24px !important;   /* space between sections */
+      text-align:left !important;
+    }
+
+    /* Bio text: natural wrapping on mobile */
+    #aboutOverlay .bio-text .l{ display:inline !important; }
+    #aboutOverlay .bio-text .gap{ display:inline !important; }
+
+    /* Comfortable text rhythm */
+    #aboutOverlay .bio-text{ line-height:1.22; }
+    #aboutOverlay .col-right ul{ margin:8px 0 0; padding:0; }
+    #aboutOverlay .col-right li{ list-style:none; margin:2px 0; }
+
+    /* Small phones: tighter sides */
+    @media (max-width: 380px){
+      #aboutOverlay{ padding-left:12px; padding-right:12px; }
+    }
+  }
+
   
 </style>
 
