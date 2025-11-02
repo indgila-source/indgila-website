@@ -230,6 +230,15 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* Consistent item spacing on right column lists, keep spacing after titles via h4 margins */
   #aboutOverlay .col-right ul li{ line-height:1.2; margin:0; }
   
+  /* Bio text styling */
+  #aboutOverlay #bio {
+    position:fixed; top:calc(var(--edge) + var(--safe-top)); left:var(--edge);
+    font-size:var(--ui); line-height:1.2; letter-spacing:.01em;
+    font-family:"Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    max-width:420px;
+  }
+  #aboutOverlay .bio-text { text-transform: uppercase !important; }
+  
   /* Bio line break control - hide mobile breaks on desktop */
   .br-mobile { display: none; }
   .br-desktop { display: inline; }
@@ -270,7 +279,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     }
 
     /* Stack bio content vertically on mobile - everything left aligned */
-    #aboutOverlay .col-left,
+    #aboutOverlay #bio,
     #aboutOverlay .col-right{
       position: static; 
       top: auto; 
@@ -286,7 +295,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       margin: 0;
       text-align: left;
     }
-    #aboutOverlay .col-left{ 
+    #aboutOverlay #bio{ 
       margin-bottom: 2em;
     }
     #aboutOverlay .col-right{ 
@@ -413,16 +422,15 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
 <!-- About overlay -->
 <div id="aboutOverlay">
-  <div class="col-left">
-    <p>Indgila Samad Ali is a designer and artist based<br>
+  <section id="bio"><p class="bio-text">
+Indgila Samad Ali is a designer and artist based<br>
 in San Francisco, with roots in Moscow and Persian heritage.<br>
 Her approach to visual systems, graphic language, typography,<br>
 art direction and spatial design balances structure and<br>
-sensitivity, finding rhythm between clarity and expression.<br>
-<br>
+sensitivity, finding rhythm between clarity and expression.<br><br>
 Currently working on OpenAI's brand and events.<br>
-Previously Design Director at COLLINS New York.</p>
-  </div>
+Previously Design Director at COLLINS New York.
+</p></section>
   <div class="col-right">
     <h4>COLLABORATIONS:</h4>
     <ul>
