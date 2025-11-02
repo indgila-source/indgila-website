@@ -431,38 +431,37 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
 
   /* Left bio column - same inset as right column */
-  #aboutOverlay #bio {
-    position: fixed;
-    top: calc(var(--edge) + var(--safe-top));
-    left: var(--edge);
-    max-width: 420px;              /* match right column's visual width balance */
-    font-size: var(--ui);
-    line-height: 1.2;
-    letter-spacing: .01em;
-    text-transform: uppercase;
-    color: #f2f2f2;
+  #aboutOverlay #bio{
+    position:fixed;
+    top:calc(var(--edge) + var(--safe-top));
+    left:var(--edge);
+    right:auto;            /* don't span full width; align to left edge */
+    max-width:none;        /* don't cap at 420px */
+    font-size:var(--ui);
+    line-height:1.2;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    color:#f2f2f2;
   }
 
-  #aboutOverlay .bio-text {
-    max-width: 420px;
-    margin: 0;
-    padding: 0;
-    text-align: left;
-    line-height: 1.18;
+  #aboutOverlay .bio-text{
+    max-width:1200px;      /* wide desktop line box so each .l fits on one line */
+    margin:0;
+    padding:0;
+    text-align:left;
+    line-height:1.18;
+    text-transform:uppercase !important;
   }
 
   /* --- BIO: FORCE EXACT LINES ON DESKTOP, NATURAL WRAP ON MOBILE --- */
 
-  /* Mobile/tablet: natural wrapping */
-  @media (max-width: 900px){
-    #aboutOverlay #bio .bio-text .l   { display: inline !important; }
-    #aboutOverlay #bio .bio-text .gap { display: inline !important; }
+  @media (min-width:901px){
+    #aboutOverlay #bio .bio-text .l   { display:block !important; }
+    #aboutOverlay #bio .bio-text .gap { display:block !important; height:1.6em; }
   }
-
-  /* Desktop: each line is its own block */
-  @media (min-width: 901px){
-    #aboutOverlay #bio .bio-text .l   { display: block !important; }
-    #aboutOverlay #bio .bio-text .gap { display: block !important; height: 1.6em; }
+  @media (max-width:900px){
+    #aboutOverlay #bio .bio-text .l   { display:inline !important; }
+    #aboutOverlay #bio .bio-text .gap { display:inline !important; }
   }
 
   /* Keep caps */
