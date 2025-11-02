@@ -239,6 +239,16 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   #aboutOverlay .bio-text { text-transform: uppercase !important; }
   
+  /* default: mobile/tablet wrap naturally */
+  .bio-text .l{ display:inline; }
+  .bio-text .gap{ display:inline; }
+
+  /* desktop: force exact lines */
+  @media (min-width: 901px){
+    .bio-text .l{ display:block; }
+    .bio-text .gap{ display:block; height:1.6em; }
+  }
+  
   /* Bio line break control - hide mobile breaks on desktop */
   .br-mobile { display: none; }
   .br-desktop { display: inline; }
@@ -422,18 +432,18 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
 <!-- About overlay -->
 <div id="aboutOverlay">
-  <section id="bio"><p class="bio-text">
-Indgila Samad Ali is a designer and artist based<br>
-in San Francisco, with roots in Moscow and Persian<br>
-heritage.<br>
-Her approach to visual systems, graphic language,<br>
-typography,<br>
-art direction and spatial design balances structure and<br>
-sensitivity, finding rhythm between clarity and<br>
-expression.<br><br>
-Currently working on OpenAI's brand and events.<br>
-Previously Design Director at COLLINS New York.
-</p></section>
+  <section id="bio">
+  <p class="bio-text">
+    <span class="l">INDGILA SAMAD ALI IS A DESIGNER AND ARTIST BASED</span>
+    <span class="l">IN SAN FRANCISCO, WITH ROOTS IN MOSCOW AND PERSIAN HERITAGE.</span>
+    <span class="l">HER APPROACH TO VISUAL SYSTEMS, GRAPHIC LANGUAGE, TYPOGRAPHY,</span>
+    <span class="l">ART DIRECTION AND SPATIAL DESIGN BALANCES STRUCTURE AND</span>
+    <span class="l">SENSITIVITY, FINDING RHYTHM BETWEEN CLARITY AND EXPRESSION.</span>
+    <span class="gap" aria-hidden="true"></span>
+    <span class="l">CURRENTLY WORKING ON OPENAI'S BRAND AND EVENTS.</span>
+    <span class="l">PREVIOUSLY DESIGN DIRECTOR AT COLLINS NEW YORK.</span>
+  </p>
+</section>
   <div class="col-right">
     <h4>COLLABORATIONS:</h4>
     <ul>
