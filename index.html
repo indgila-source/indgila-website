@@ -284,7 +284,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     .desktop-only { display: none; }
     /* Match bio line spacing */
     .intro-left, .project-description, .credits{ line-height: 1.2; }
-    .intro-left{ left:12px; }
+    .intro-left{ left:var(--edge); }
     /* Mobile: move project description to top-left */
     .project-description{
       top: calc(var(--edge) + var(--safe-top));
@@ -377,7 +377,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     
     /* Add padding to bio content for vertical layout */
     #aboutOverlay {
-      padding: calc(var(--edge) + var(--safe-top)) calc(var(--edge) + var(--safe-top)) calc(var(--edge) + var(--safe-bottom)) calc(var(--edge) + var(--safe-top));
+      padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom)) var(--edge);
     }
 
     /* Media: default mobile behavior (letterboxed contain) */
@@ -450,7 +450,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
     /* Small phones: slightly tighter side padding to avoid overflow */
     @media (max-width: 380px){
-      #aboutOverlay{ padding-left: 12px; padding-right: 12px; }
+      #aboutOverlay{ padding-left: var(--edge); padding-right: var(--edge); }
     }
   }
 
@@ -527,7 +527,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       background:#000;
       overflow:auto;
       /* top/bottom include safe areas */
-      padding: calc(var(--edge) + var(--safe-top)) 16px calc(var(--edge) + var(--safe-bottom));
+      padding: calc(var(--edge) + var(--safe-top)) var(--edge) calc(var(--edge) + var(--safe-bottom)) var(--edge);
       display:block;                 /* no side-by-side layout */
       z-index:1000;
     }
@@ -557,7 +557,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
     /* Small phones: tighter sides */
     @media (max-width: 380px){
-      #aboutOverlay{ padding-left:12px; padding-right:12px; }
+      #aboutOverlay{ padding-left:var(--edge); padding-right:var(--edge); }
     }
   }
 
