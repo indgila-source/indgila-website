@@ -736,7 +736,7 @@ const slides = [
   { type:'image', src:'images/037.jpg', description:'', credits:'' },
 ];
 
-// Build a randomized sequence that alternates OpenAI/non-OpenAI and won't put two videos in a row
+// Build a randomized sequence following 1:2 pattern (1 OpenAI, 2 non-OpenAI) and won't put two videos in a row
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function isOpenAI(slide){
   const desc = (slide.description || '').toUpperCase();
@@ -756,99 +756,141 @@ function buildSequence(list){
   
   const seq = [];
   let oi=0, ov=0, ni=0, nv=0; // indices for each bucket
+  let nonOpenAICount = 0; // Track how many non-OpenAI items in current cycle (0 = need OpenAI, 1-2 = need non-OpenAI)
   
   // Helper to check availability
   const hasOpenAI = () => oi < openaiImages.length || ov < openaiVideos.length;
   const hasNonOpenAI = () => ni < nonOpenaiImages.length || nv < nonOpenaiVideos.length;
   
   // Helper to safely pick item from a bucket (ensures no two videos in a row)
-  const pickItem = (imgArr, imgIdx, vidArr, vidIdx, preferImage) => {
+  const pickItem = (imgArr, imgIdx, vidArr, vidIdx) => {
     const lastIsVideo = seq.length > 0 && seq[seq.length-1]?.type === 'mp4';
     if (lastIsVideo) {
       // Must pick image if last was video
       if (imgIdx < imgArr.length) return {item: imgArr[imgIdx], newImgIdx: imgIdx+1, newVidIdx: vidIdx};
       return null; // Can't pick video after video
     }
-    // Can pick either, prefer based on parameter
-    if (preferImage && imgIdx < imgArr.length) return {item: imgArr[imgIdx], newImgIdx: imgIdx+1, newVidIdx: vidIdx};
+    // Can pick either type, prefer video if available
     if (vidIdx < vidArr.length) return {item: vidArr[vidIdx], newImgIdx: imgIdx, newVidIdx: vidIdx+1};
     if (imgIdx < imgArr.length) return {item: imgArr[imgIdx], newImgIdx: imgIdx+1, newVidIdx: vidIdx};
     return null;
   };
   
-  // Determine starting side (prefer non-OpenAI for variety, but OpenAI if that's all we have)
-  let useOpenAINext = !hasNonOpenAI() || (hasNonOpenAI() && hasOpenAI() && Math.random() < 0.5);
-  
-  // Build sequence alternating between OpenAI and non-OpenAI
+  // Build sequence following 1:2 pattern (1 OpenAI, 2 non-OpenAI, repeat)
   while (hasOpenAI() || hasNonOpenAI()) {
     let added = false;
     
-    // Try to pick from the current alternating side
-    if (useOpenAINext && hasOpenAI()) {
-      const result = pickItem(openaiImages, oi, openaiVideos, ov, false);
+    // Pattern: nonOpenAICount 0 = need OpenAI, 1-2 = need non-OpenAI
+    if (nonOpenAICount === 0 && hasOpenAI()) {
+      // Need 1 OpenAI item
+      const result = pickItem(openaiImages, oi, openaiVideos, ov);
       if (result) {
         seq.push(result.item);
         oi = result.newImgIdx;
         ov = result.newVidIdx;
-        useOpenAINext = false; // Switch to non-OpenAI next
+        nonOpenAICount = 1; // Next: need first non-OpenAI
         added = true;
       }
-    } else if (!useOpenAINext && hasNonOpenAI()) {
-      const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv, false);
+    } else if (nonOpenAICount > 0 && nonOpenAICount < 3 && hasNonOpenAI()) {
+      // Need 2 non-OpenAI items
+      const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv);
       if (result) {
         seq.push(result.item);
         ni = result.newImgIdx;
         nv = result.newVidIdx;
-        useOpenAINext = true; // Switch to OpenAI next
+        nonOpenAICount++; // Increment count
+        if (nonOpenAICount === 3) nonOpenAICount = 0; // Reset to 0 after 2 non-OpenAI items
         added = true;
       }
     }
     
-    // If we couldn't pick from alternating side, pick from other side
+    // If pattern can't be followed, gracefully continue
     if (!added) {
-      if (useOpenAINext && hasNonOpenAI()) {
-        const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv, false);
+      // If we need OpenAI but don't have any, switch to non-OpenAI
+      if (nonOpenAICount === 0 && !hasOpenAI() && hasNonOpenAI()) {
+        const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv);
         if (result) {
           seq.push(result.item);
           ni = result.newImgIdx;
           nv = result.newVidIdx;
-          // Keep useOpenAINext = true so we'll try OpenAI again next if available
-        } else {
-          // Can't add from either side due to constraint, try forcing from non-OpenAI
-          if (ni < nonOpenaiImages.length) {
-            seq.push(nonOpenaiImages[ni++]);
-          }
+          nonOpenAICount = 1;
+          added = true;
         }
-      } else if (!useOpenAINext && hasOpenAI()) {
-        const result = pickItem(openaiImages, oi, openaiVideos, ov, false);
+      }
+      // If we need non-OpenAI but don't have any, switch to OpenAI
+      else if (nonOpenAICount > 0 && !hasNonOpenAI() && hasOpenAI()) {
+        const result = pickItem(openaiImages, oi, openaiVideos, ov);
         if (result) {
           seq.push(result.item);
           oi = result.newImgIdx;
           ov = result.newVidIdx;
-          // Keep useOpenAINext = false so we'll try non-OpenAI again next if available
-        } else {
-          // Can't add from either side due to constraint, try forcing from OpenAI
-          if (oi < openaiImages.length) {
-            seq.push(openaiImages[oi++]);
+          nonOpenAICount = 0; // Reset pattern
+          added = true;
+        }
+      }
+      // If constraint prevents picking from needed side, try the other side
+      else if (nonOpenAICount === 0 && hasOpenAI()) {
+        // Try non-OpenAI as fallback
+        if (hasNonOpenAI()) {
+          const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv);
+          if (result) {
+            seq.push(result.item);
+            ni = result.newImgIdx;
+            nv = result.newVidIdx;
+            nonOpenAICount = 1;
+            added = true;
           }
         }
-      } else {
-        // One side is exhausted, add remaining items respecting video constraint
+      } else if (nonOpenAICount > 0 && hasNonOpenAI()) {
+        // Try OpenAI as fallback
         if (hasOpenAI()) {
-          const result = pickItem(openaiImages, oi, openaiVideos, ov, false);
+          const result = pickItem(openaiImages, oi, openaiVideos, ov);
+          if (result) {
+            seq.push(result.item);
+            oi = result.newImgIdx;
+            ov = result.newVidIdx;
+            nonOpenAICount = 0;
+            added = true;
+          }
+        }
+      }
+      
+      // Last resort: add any available item
+      if (!added) {
+        if (hasOpenAI()) {
+          const result = pickItem(openaiImages, oi, openaiVideos, ov);
           if (result) {
             seq.push(result.item);
             oi = result.newImgIdx;
             ov = result.newVidIdx;
           }
         } else if (hasNonOpenAI()) {
-          const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv, false);
+          const result = pickItem(nonOpenaiImages, ni, nonOpenaiVideos, nv);
           if (result) {
             seq.push(result.item);
             ni = result.newImgIdx;
             nv = result.newVidIdx;
           }
         }
+      }
+    }
+  }
+  
+  // Post-process: fix any accidental consecutive videos while preserving pattern as much as possible
+  for (let i = 1; i < seq.length; i++) {
+    if (seq[i].type === 'mp4' && seq[i-1].type === 'mp4') {
+      // Found consecutive videos, try to swap with a later image
+      let swapped = false;
+      for (let j = i + 1; j < seq.length; j++) {
+        if (seq[j].type === 'image') {
+          [seq[i], seq[j]] = [seq[j], seq[i]];
+          swapped = true;
+          break;
+        }
+      }
+      // If no later image found, try swapping with previous image
+      if (!swapped && i > 1 && seq[i-2].type === 'image') {
+        [seq[i-1], seq[i-2]] = [seq[i-2], seq[i-1]];
       }
     }
   }
