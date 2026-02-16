@@ -669,19 +669,19 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     </ul>
 
     <h4>JURY:</h4>
-    <ul>
-      <li>ADC AWARDS (NEW YORK) — AI JURY PRESIDENT, 2026</li>
+    <ul class="publications-list">
+      <li><a href="https://adcawards.org/jury/presidents/" target="_blank" rel="noopener noreferrer">ADC AWARDS (NEW YORK)</a></li>
       <li>ADC (RUSSIA) — JURY, 2021</li>
     </ul>
 
     <h4>AWARDS:</h4>
-    <ul>
-      <li>ADC NEW YORK</li>
-      <li>COMMUNICATION ARTS</li>
-      <li>D&amp;AD</li>
+    <ul class="publications-list">
+      <li><a href="https://www.oneclub.org/awards/adcawards/-award/56914/openai-brand-film-sound/" target="_blank" rel="noopener noreferrer">ADC</a></li>
+      <li><a href="https://www.commarts.com/project/38506/muse-group" target="_blank" rel="noopener noreferrer">COMMUNICATION ARTS</a></li>
+      <li><a href="https://www.dandad.org/work/d-ad-awards-archive/openai-brand-film" target="_blank" rel="noopener noreferrer">D&amp;AD</a></li>
       <li>EFFIE AWARDS — GOLD</li>
-      <li>EFFIE AWARDS — GRAND PRIX</li>
-      <li>RED DOT DESIGN AWARD(S)</li>
+      <li><a href="https://winners.effie.ru/2021/osnovnye-nominafii/tovary-i-uslugi/gran-pri-nko-blagotvoritel-nye-organizafii/pervoe-mobil-noe-prilozhenie-adresnoi-prozrachnoi-pomoshi" target="_blank" rel="noopener noreferrer">EFFIE AWARDS — GRAND PRIX</a></li>
+      <li><a href="https://www.red-dot.org/zh/project/sngp-company-12484" target="_blank" rel="noopener noreferrer">RED DOT DESIGN AWARD(S)</a></li>
     </ul>
   </div>
   <div class="bottom-left">INDGILA SAMAD ALI</div>
@@ -907,14 +907,14 @@ function show(i){
 /* ---------- Navigation (mouse, keyboard, touch) ---------- */
 // Detect touch-only / coarse-pointer environments (mobile)
 const IS_TOUCH = window.matchMedia('(hover:none), (pointer:coarse)').matches;
-const isPublicationLink = (el) => !!(el && el.closest && el.closest('.publications-list a'));
+const isAboutOverlayLink = (el) => !!(el && el.closest && el.closest('#aboutOverlay a'));
 
 // Arrow follows the mouse; disabled on touch
 function updateCursor(e){
   if (IS_TOUCH) return;   // <-- do nothing on phones/tablets
 
   const isAboutOpen = document.body.classList.contains('show-about');
-  if (isAboutOpen && isPublicationLink(e?.target)) {
+  if (isAboutOpen && isAboutOverlayLink(e?.target)) {
     cursorArrow.style.opacity = 0;
     cursorArrow.style.display = 'none';
     return;
@@ -992,7 +992,7 @@ aboutOverlay && aboutOverlay.addEventListener('mousemove', updateCursor);
 // As soon as pointer enters the overlay, ensure the cursor is visible + positioned
 aboutOverlay && aboutOverlay.addEventListener('mouseenter', (e) => {
   if (IS_TOUCH) return;
-  if (isPublicationLink(e?.target)) {
+  if (isAboutOverlayLink(e?.target)) {
     cursorArrow.style.opacity = 0;
     cursorArrow.style.display = 'none';
     return;
@@ -1003,15 +1003,21 @@ aboutOverlay && aboutOverlay.addEventListener('mouseenter', (e) => {
 });
 aboutOverlay && aboutOverlay.addEventListener('mouseover', (e) => {
   if (IS_TOUCH) return;
-  if (isPublicationLink(e?.target)) {
+  const link = e?.target?.closest ? e.target.closest('#aboutOverlay a') : null;
+  if (link) {
+    link.style.setProperty('cursor', 'pointer', 'important');
     cursorArrow.style.opacity = 0;
     cursorArrow.style.display = 'none';
   }
 });
 aboutOverlay && aboutOverlay.addEventListener('mouseout', (e) => {
   if (IS_TOUCH) return;
+  const fromLink = e?.target?.closest ? e.target.closest('#aboutOverlay a') : null;
+  if (fromLink) {
+    fromLink.style.removeProperty('cursor');
+  }
   const to = e.relatedTarget;
-  if (isPublicationLink(e?.target) && !isPublicationLink(to)) {
+  if (isAboutOverlayLink(e?.target) && !isAboutOverlayLink(to)) {
     cursorArrow.style.display = 'block';
     cursorArrow.style.opacity = 1;
   }
