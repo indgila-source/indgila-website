@@ -215,15 +215,16 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   }
   #aboutOverlay .col-left{ left:var(--edge); max-width:420px; }
   #aboutOverlay .col-right{ right:var(--edge); text-align:right; max-width:260px; line-height:1.2; }
-  #aboutOverlay .bottom-left, #aboutOverlay .bottom-center, #aboutOverlay .bottom-right{
+  #aboutOverlay .bottom-left, #aboutOverlay .bottom-center, #aboutOverlay .bottom-blog, #aboutOverlay .bottom-right{
     position:fixed; bottom:calc(var(--edge) + var(--safe-bottom)); z-index:1001;
     font-size:var(--ui); line-height:1.2; letter-spacing:.02em; text-transform:uppercase;
     color:#f2f2f2; mix-blend-mode:normal; pointer-events:auto;
   }
   #aboutOverlay .bottom-left{ left:var(--edge); }
-  #aboutOverlay .bottom-center{ left:50%; transform:translateX(-50%); }
+  #aboutOverlay .bottom-center{ left:calc(var(--edge) + (100vw - (2 * var(--edge))) / 3); transform:translateX(-50%); }
+  #aboutOverlay .bottom-blog{ left:calc(var(--edge) + (100vw - (2 * var(--edge))) * 2 / 3); transform:translateX(-50%); }
   #aboutOverlay .bottom-right{ right:var(--edge); }
-  #aboutOverlay .bottom-center a, #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
+  #aboutOverlay .bottom-center a, #aboutOverlay .bottom-blog a, #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
   #aboutOverlay h4{ margin:16px 0 6px; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
   #aboutOverlay .col-right h4:first-child{ margin-top:0; }
   #aboutOverlay p{ margin:0 0 10px; }
@@ -346,6 +347,9 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .bottom-center{
       display: none;
     }
+    #aboutOverlay .bottom-blog{
+      display: none;
+    }
     
     /* Make Instagram flow after content (not fixed) */
     #aboutOverlay .bottom-right{
@@ -440,6 +444,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay #bio,
     #aboutOverlay .col-right,
     #aboutOverlay .bottom-right,
+    #aboutOverlay .bottom-blog,
     #aboutOverlay .mobile-email{
       position: static !important;
       top: auto !important; left: auto !important; right: auto !important;
@@ -542,6 +547,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .col-left,
     #aboutOverlay .col-right,
     #aboutOverlay .bottom-right,
+    #aboutOverlay .bottom-blog,
     #aboutOverlay .mobile-email{
       position:static !important;
       top:auto !important; left:auto !important; right:auto !important;
@@ -687,6 +693,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   </div>
   <div class="bottom-left">INDGILA SAMAD ALI</div>
   <div class="bottom-center"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
+  <div class="bottom-blog"><a href="https://blog.indgila.com/" target="_blank">BLOG</a></div>
   <div class="bottom-right"><a href="https://www.instagram.com/indgila/" target="_blank" style="color: white;">@INDGILA</a></div>
   <div class="mobile-email"><a href="mailto:info@indgila.com">INFO@INDGILA.COM</a></div>
 </div>
