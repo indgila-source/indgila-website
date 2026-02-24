@@ -224,7 +224,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   #aboutOverlay .bottom-center{ left:calc(var(--edge) + (100vw - (2 * var(--edge))) / 3); transform:translateX(-50%); }
   #aboutOverlay .bottom-blog{ left:calc(var(--edge) + (100vw - (2 * var(--edge))) * 2 / 3); transform:translateX(-50%); }
   #aboutOverlay .bottom-right{ right:var(--edge); }
-  #aboutOverlay .bottom-center a, #aboutOverlay .bottom-blog a, #aboutOverlay .bottom-right a{ color:inherit; text-decoration:underline; }
+  #aboutOverlay .bottom-center a, #aboutOverlay .bottom-blog a, #aboutOverlay .bottom-right a{ color:inherit; text-decoration:none; }
+  #aboutOverlay .bottom-center a:hover, #aboutOverlay .bottom-blog a:hover, #aboutOverlay .bottom-right a:hover{ cursor:pointer; }
   #aboutOverlay h4{ margin:16px 0 6px; font-weight:400; text-transform:uppercase; letter-spacing:.02em; }
   #aboutOverlay .col-right h4:first-child{ margin-top:0; }
   #aboutOverlay p{ margin:0 0 10px; }
