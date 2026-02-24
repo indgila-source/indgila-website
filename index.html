@@ -356,7 +356,16 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       right: auto;
       top: auto;
       text-align: left;
-      margin: 2em 0 0 0;
+      margin: 0 0 12px 0;
+    }
+    #aboutOverlay .bottom-blog{
+      position: static;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      top: auto;
+      text-align: left;
+      margin: 0 0 12px 0;
     }
     
     /* Show mobile email on mobile */
@@ -564,6 +573,14 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay .bio-text{ line-height:1.22; }
     #aboutOverlay .col-right ul{ margin:8px 0 0; padding:0; }
     #aboutOverlay .col-right li{ list-style:none; margin:2px 0; }
+    #aboutOverlay .bottom-right,
+    #aboutOverlay .bottom-blog,
+    #aboutOverlay .mobile-email{
+      margin: 0 0 12px !important;
+    }
+    #aboutOverlay .mobile-email{
+      margin: 0 !important;
+    }
 
     /* Small phones: tighter sides */
     @media (max-width: 380px){
