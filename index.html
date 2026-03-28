@@ -735,8 +735,8 @@ const slides = [
   { type:'mp4', src:'videos/05.mp4', description:'IDENTITY FOR SORA SELECTS NEW YORK', credits:'× OPENAI DESIGN STUDIO' },
   { type:'mp4', src:'videos/06.mp4', description:'MUSE DISPLAY FOR MUSE GROUP', credits:'× COLLINS, CONTRAST TYPE FOUNDRY' },
   { type:'mp4', src:'videos/07.mp4', description:'IDENTITY FOR OPENAI FRANCE', credits:'× OPENAI DESIGN STUDIO' },
-  { type:'mp4', src:'videos/08.mp4', description:'DEVDAY 2024 BRAND IDENTITY', credits:'× OPENAI DESIGN STUDIO, STUDIO DUMBAR' },
-  { type:'mp4', src:'videos/09.mp4', description:'DEVDAY 2024 BRAND IDENTITY', credits:'× OPENAI DESIGN STUDIO, STUDIO DUMBAR' },
+  { type:'mp4', src:'videos/08.mp4', description:'DEVDAY BRAND IDENTITY', year:'2024', credits:'× OPENAI DESIGN STUDIO, STUDIO DUMBAR' },
+  { type:'mp4', src:'videos/09.mp4', description:'DEVDAY BRAND IDENTITY', year:'2024', credits:'× OPENAI DESIGN STUDIO, STUDIO DUMBAR' },
   { type:'image', src:'images/03.jpg', description:'IDENTITY FOR OPENAI FRANCE', credits:'× OPENAI DESIGN STUDIO' },
   { type:'image', src:'images/038.jpg', description:'IDENTITY FOR OPENAI AUSTRALIA', credits:'× OPENAI DESIGN STUDIO' },
   { type:'image', src:'images/039.jpg', description:'WINE LABELS FOR OPENAI AUSTRALIA', credits:'× OPENAI DESIGN STUDIO' },
@@ -821,10 +821,16 @@ const navNext  = document.getElementById('navNext');
 
 
 
+function formatProjectDescription(slide){
+  const description = slide?.description || slide?.caption || '';
+  if (!description) return '';
+  return slide?.year ? `${description}, ${slide.year}` : description;
+}
+
 // helper: set project description and credits
-function setProjectInfo(description, credits){ 
-  projectDescriptionEl.textContent = description || ''; 
-  creditsEl.textContent = credits || ''; 
+function setProjectInfo(slide){
+  projectDescriptionEl.textContent = formatProjectDescription(slide);
+  creditsEl.textContent = slide?.credits || '';
 }
 
 
@@ -851,7 +857,7 @@ function show(i){
   isTransitioning = true;
   idx = i;
   const cur = seq[i];
-  setProjectInfo(cur.description || cur.caption || '', cur.credits || '');
+  setProjectInfo(cur);
 
   if (cur.type === 'mp4') {
     // Keep current image visible while the video warms
@@ -927,7 +933,7 @@ function show(i){
 // init: show first slide without animation
 (function init(){
   const first = seq[idx];
-  setProjectInfo(first.description || first.caption || '', first.credits || '');
+  setProjectInfo(first);
   if(first.type==='mp4'){ show(idx); }
   else {
     buf[active].src = first.src;
