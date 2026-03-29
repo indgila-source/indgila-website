@@ -50,6 +50,11 @@
     --safe-top:    env(safe-area-inset-top, 0px);
   }
 
+  /* 16-inch laptops need a slightly larger UI size to match the physical feel of 14-inch screens. */
+  @media (min-width: 1600px){
+    :root{ --ui: 14px; }
+  }
+
   html,body{
     margin:0; padding:0; height:100%; background:#000; overflow:hidden;
     font-family: "Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
