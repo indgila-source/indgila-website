@@ -784,70 +784,54 @@ function isOpenAIProject(slide){
   return /OPENAI|SORA|DEVDAY|UNGA/.test(haystack);
 }
 
-function interleaveBuckets(primary, secondary){
-  const merged = [];
-  let preferPrimary = true;
-
-  while (primary.length || secondary.length) {
-    if (preferPrimary && primary.length) merged.push(primary.shift());
-    else if (!preferPrimary && secondary.length) merged.push(secondary.shift());
-    else if (primary.length) merged.push(primary.shift());
-    else if (secondary.length) merged.push(secondary.shift());
-    preferPrimary = !preferPrimary;
-  }
-
-  return merged;
+function takeFromGroup(group, lastWasVideo){
+  if (!group.images.length && !group.videos.length) return null;
+  if (lastWasVideo && group.images.length) return group.images.shift();
+  if (group.images.length) return group.images.shift();
+  return group.videos.shift();
 }
 
 function buildSequence(list){
-  const openaiImages = [];
-  const openaiVideos = [];
-  const otherImages = [];
-  const otherVideos = [];
+  const groups = {
+    other: { images: [], videos: [] },
+    openai: { images: [], videos: [] }
+  };
 
   list.forEach((slide) => {
-    const isOpenAI = isOpenAIProject(slide);
-    if (slide.type === 'mp4') {
-      if (isOpenAI) openaiVideos.push(slide);
-      else otherVideos.push(slide);
-    } else {
-      if (isOpenAI) openaiImages.push(slide);
-      else otherImages.push(slide);
-    }
+    const group = isOpenAIProject(slide) ? groups.openai : groups.other;
+    if (slide.type === 'mp4') group.videos.push(slide);
+    else group.images.push(slide);
   });
 
-  const images = interleaveBuckets(otherImages, openaiImages);
-  const videos = interleaveBuckets(otherVideos, openaiVideos);
-
-  if (!videos.length) return images;
-  if (!images.length) return videos;
-
   const seq = [];
-  const slots = videos.length + 1;
-  let videoIndex = 0;
+  const order = ['other', 'openai'];
+  let pointer = 0;
+  let stalled = 0;
 
-  for (let i = 0; i < images.length; i += 1) {
-    seq.push(images[i]);
+  while (
+    groups.other.images.length || groups.other.videos.length ||
+    groups.openai.images.length || groups.openai.videos.length
+  ) {
+    const key = order[pointer % order.length];
+    const lastWasVideo = seq[seq.length - 1]?.type === 'mp4';
+    const next = takeFromGroup(groups[key], lastWasVideo);
 
-    const imagesPlaced = i + 1;
-    const targetVideos = Math.floor((imagesPlaced * videos.length) / slots);
-    while (videoIndex < targetVideos) {
-      const lastIsVideo = seq[seq.length - 1]?.type === 'mp4';
-      if (lastIsVideo) break;
-      seq.push(videos[videoIndex]);
-      videoIndex += 1;
+    if (next) {
+      seq.push(next);
+      stalled = 0;
+    } else {
+      stalled += 1;
+      if (stalled >= order.length) {
+        const fallback =
+          takeFromGroup(groups.other, lastWasVideo) ||
+          takeFromGroup(groups.openai, lastWasVideo);
+        if (!fallback) break;
+        seq.push(fallback);
+        stalled = 0;
+      }
     }
-  }
 
-  while (videoIndex < videos.length) {
-    const lastIsVideo = seq[seq.length - 1]?.type === 'mp4';
-    if (lastIsVideo) {
-      const fallbackImage = images.find((slide) => !seq.includes(slide));
-      if (fallbackImage) seq.push(fallbackImage);
-      else break;
-    }
-    seq.push(videos[videoIndex]);
-    videoIndex += 1;
+    pointer += 1;
   }
 
   return seq;
@@ -916,6 +900,7 @@ function show(i){
   isTransitioning = true;
   idx = i;
   const cur = seq[i];
+  if (!cur) { finish(); return; }
   setProjectInfo(cur);
 
   if (cur.type === 'mp4') {
