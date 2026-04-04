@@ -97,7 +97,7 @@
 
   background:#000; border:0;
   opacity:0;                               /* you already fade it on in JS */
-  transition:none;
+  transition:opacity 300ms ease;
   z-index:4;                               /* above images, below nav hotspots */
   pointer-events:auto;                     /* keep center interactive if needed */
 }
@@ -784,44 +784,70 @@ function isOpenAIProject(slide){
   return /OPENAI|SORA|DEVDAY|UNGA/.test(haystack);
 }
 
-function takeNextSlide(bucket, lastWasVideo){
-  if (!bucket.images.length && !bucket.videos.length) return null;
-  if (lastWasVideo && bucket.images.length) return bucket.images.shift();
-  if (bucket.images.length) return bucket.images.shift();
-  return bucket.videos.shift();
+function interleaveBuckets(primary, secondary){
+  const merged = [];
+  let preferPrimary = true;
+
+  while (primary.length || secondary.length) {
+    if (preferPrimary && primary.length) merged.push(primary.shift());
+    else if (!preferPrimary && secondary.length) merged.push(secondary.shift());
+    else if (primary.length) merged.push(primary.shift());
+    else if (secondary.length) merged.push(secondary.shift());
+    preferPrimary = !preferPrimary;
+  }
+
+  return merged;
 }
 
 function buildSequence(list){
-  const buckets = {
-    openai: { images: [], videos: [] },
-    other: { images: [], videos: [] }
-  };
+  const openaiImages = [];
+  const openaiVideos = [];
+  const otherImages = [];
+  const otherVideos = [];
 
   list.forEach((slide) => {
-    const bucket = isOpenAIProject(slide) ? buckets.openai : buckets.other;
-    if (slide.type === 'mp4') bucket.videos.push(slide);
-    else bucket.images.push(slide);
+    const isOpenAI = isOpenAIProject(slide);
+    if (slide.type === 'mp4') {
+      if (isOpenAI) openaiVideos.push(slide);
+      else otherVideos.push(slide);
+    } else {
+      if (isOpenAI) openaiImages.push(slide);
+      else otherImages.push(slide);
+    }
   });
 
+  const images = interleaveBuckets(otherImages, openaiImages);
+  const videos = interleaveBuckets(otherVideos, openaiVideos);
+
+  if (!videos.length) return images;
+  if (!images.length) return videos;
+
   const seq = [];
-  let prefer = 'other';
+  const slots = videos.length + 1;
+  let videoIndex = 0;
 
-  while (
-    buckets.openai.images.length || buckets.openai.videos.length ||
-    buckets.other.images.length || buckets.other.videos.length
-  ){
-    const lastWasVideo = seq[seq.length - 1]?.type === 'mp4';
-    let next = takeNextSlide(buckets[prefer], lastWasVideo);
+  for (let i = 0; i < images.length; i += 1) {
+    seq.push(images[i]);
 
-    if (!next) {
-      prefer = prefer === 'openai' ? 'other' : 'openai';
-      next = takeNextSlide(buckets[prefer], lastWasVideo);
+    const imagesPlaced = i + 1;
+    const targetVideos = Math.floor((imagesPlaced * videos.length) / slots);
+    while (videoIndex < targetVideos) {
+      const lastIsVideo = seq[seq.length - 1]?.type === 'mp4';
+      if (lastIsVideo) break;
+      seq.push(videos[videoIndex]);
+      videoIndex += 1;
     }
+  }
 
-    if (!next) break;
-
-    seq.push(next);
-    prefer = prefer === 'openai' ? 'other' : 'openai';
+  while (videoIndex < videos.length) {
+    const lastIsVideo = seq[seq.length - 1]?.type === 'mp4';
+    if (lastIsVideo) {
+      const fallbackImage = images.find((slide) => !seq.includes(slide));
+      if (fallbackImage) seq.push(fallbackImage);
+      else break;
+    }
+    seq.push(videos[videoIndex]);
+    videoIndex += 1;
   }
 
   return seq;
@@ -894,6 +920,7 @@ function show(i){
 
   if (cur.type === 'mp4') {
     // Keep current image visible while the video warms
+    videoEl.style.opacity = 0;
     mp4src.src = cur.src;           // set <source> explicitly
     try { videoEl.pause(); } catch {}
     videoEl.currentTime = 0;
@@ -911,7 +938,7 @@ function show(i){
         buf[0].classList.remove('show');
         buf[1].classList.remove('show');
         finish();
-      }, 120);
+      }, FADE);
     };
 
     const onReady  = () => { cleanup(); reveal(); };
