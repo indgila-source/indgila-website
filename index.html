@@ -779,25 +779,51 @@ const slides = [
   { type:'image', src:'images/035.jpg', description:'OPENAI BRAND IDENTITY', year:'2025', credits:'× OPENAI DESIGN STUDIO' },
 ];
 
-// Build a randomized sequence that won't put two videos in a row
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function isOpenAIProject(slide){
+  const haystack = `${slide?.description || ''} ${slide?.credits || ''}`.toUpperCase();
+  return /OPENAI|SORA|DEVDAY|UNGA/.test(haystack);
+}
+
+function takeNextSlide(bucket, lastWasVideo){
+  if (!bucket.images.length && !bucket.videos.length) return null;
+  if (lastWasVideo && bucket.images.length) return bucket.images.shift();
+  if (bucket.images.length) return bucket.images.shift();
+  return bucket.videos.shift();
+}
+
 function buildSequence(list){
-  const imgs = list.filter(s=>s.type==='image');
-  const vids = list.filter(s=>s.type==='mp4');
-  shuffle(imgs); shuffle(vids);
+  const buckets = {
+    openai: { images: [], videos: [] },
+    other: { images: [], videos: [] }
+  };
+
+  list.forEach((slide) => {
+    const bucket = isOpenAIProject(slide) ? buckets.openai : buckets.other;
+    if (slide.type === 'mp4') bucket.videos.push(slide);
+    else bucket.images.push(slide);
+  });
+
   const seq = [];
-  let i=0, v=0;
-  if (imgs.length) seq.push(imgs[i++]); else if (vids.length) seq.push(vids[v++]);
-  while (i<imgs.length || v<vids.length){
-    const lastIsVideo = seq[seq.length-1]?.type === 'mp4';
-    if (lastIsVideo){
-      if (i<imgs.length) seq.push(imgs[i++]); else seq.push(vids[v++]);
-    } else {
-      if (v<vids.length && Math.random()<0.4) seq.push(vids[v++]);
-      else if (i<imgs.length) seq.push(imgs[i++]);
-      else seq.push(vids[v++]);
+  let prefer = 'other';
+
+  while (
+    buckets.openai.images.length || buckets.openai.videos.length ||
+    buckets.other.images.length || buckets.other.videos.length
+  ){
+    const lastWasVideo = seq[seq.length - 1]?.type === 'mp4';
+    let next = takeNextSlide(buckets[prefer], lastWasVideo);
+
+    if (!next) {
+      prefer = prefer === 'openai' ? 'other' : 'openai';
+      next = takeNextSlide(buckets[prefer], lastWasVideo);
     }
+
+    if (!next) break;
+
+    seq.push(next);
+    prefer = prefer === 'openai' ? 'other' : 'openai';
   }
+
   return seq;
 }
 let seq = buildSequence(slides);
