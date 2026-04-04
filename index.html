@@ -784,54 +784,60 @@ function isOpenAIProject(slide){
   return /OPENAI|SORA|DEVDAY|UNGA/.test(haystack);
 }
 
-function takeFromGroup(group, lastWasVideo){
-  if (!group.images.length && !group.videos.length) return null;
-  if (lastWasVideo && group.images.length) return group.images.shift();
-  if (group.images.length) return group.images.shift();
-  return group.videos.shift();
+function interleaveLists(primary, secondary){
+  const merged = [];
+  let usePrimary = true;
+
+  while (primary.length || secondary.length) {
+    if (usePrimary && primary.length) merged.push(primary.shift());
+    else if (!usePrimary && secondary.length) merged.push(secondary.shift());
+    else if (primary.length) merged.push(primary.shift());
+    else if (secondary.length) merged.push(secondary.shift());
+    usePrimary = !usePrimary;
+  }
+
+  return merged;
 }
 
 function buildSequence(list){
-  const groups = {
-    other: { images: [], videos: [] },
-    openai: { images: [], videos: [] }
-  };
+  const otherImages = [];
+  const openaiImages = [];
+  const otherVideos = [];
+  const openaiVideos = [];
 
   list.forEach((slide) => {
-    const group = isOpenAIProject(slide) ? groups.openai : groups.other;
-    if (slide.type === 'mp4') group.videos.push(slide);
-    else group.images.push(slide);
+    if (slide.type === 'mp4') {
+      if (isOpenAIProject(slide)) openaiVideos.push(slide);
+      else otherVideos.push(slide);
+    } else {
+      if (isOpenAIProject(slide)) openaiImages.push(slide);
+      else otherImages.push(slide);
+    }
   });
 
+  const images = interleaveLists(otherImages, openaiImages);
+  const videos = interleaveLists(otherVideos, openaiVideos);
+
+  if (!videos.length) return images;
+  if (!images.length) return videos;
+
   const seq = [];
-  const order = ['other', 'openai'];
-  let pointer = 0;
-  let stalled = 0;
+  const gap = Math.max(2, Math.round(images.length / videos.length));
+  let imageIndex = 0;
+  let videoIndex = 0;
 
-  while (
-    groups.other.images.length || groups.other.videos.length ||
-    groups.openai.images.length || groups.openai.videos.length
-  ) {
-    const key = order[pointer % order.length];
-    const lastWasVideo = seq[seq.length - 1]?.type === 'mp4';
-    const next = takeFromGroup(groups[key], lastWasVideo);
-
-    if (next) {
-      seq.push(next);
-      stalled = 0;
-    } else {
-      stalled += 1;
-      if (stalled >= order.length) {
-        const fallback =
-          takeFromGroup(groups.other, lastWasVideo) ||
-          takeFromGroup(groups.openai, lastWasVideo);
-        if (!fallback) break;
-        seq.push(fallback);
-        stalled = 0;
-      }
+  while (imageIndex < images.length || videoIndex < videos.length) {
+    let pushedImage = 0;
+    while (imageIndex < images.length && pushedImage < gap) {
+      seq.push(images[imageIndex]);
+      imageIndex += 1;
+      pushedImage += 1;
     }
 
-    pointer += 1;
+    if (videoIndex < videos.length) {
+      seq.push(videos[videoIndex]);
+      videoIndex += 1;
+    }
   }
 
   return seq;
