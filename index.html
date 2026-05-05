@@ -779,6 +779,9 @@ const slides = [
   { type:'image', src:'images/035.jpg', description:'OPENAI BRAND IDENTITY', year:'2025', credits:'× OPENAI DESIGN STUDIO' },
 ];
 
+// Change this to whichever slide should open first.
+const START_SLIDE_SRC = 'images/034.jpg';
+
 function isOpenAIProject(slide){
   const haystack = `${slide?.description || ''} ${slide?.credits || ''}`.toUpperCase();
   return /OPENAI|SORA|DEVDAY|UNGA/.test(haystack);
@@ -842,7 +845,15 @@ function buildSequence(list){
 
   return seq;
 }
-let seq = buildSequence(slides);
+
+function pinStartSlide(sequence, preferredSrc){
+  if (!preferredSrc) return sequence;
+  const startIndex = sequence.findIndex((slide) => slide.src === preferredSrc);
+  if (startIndex <= 0) return sequence;
+  return [...sequence.slice(startIndex), ...sequence.slice(0, startIndex)];
+}
+
+let seq = pinStartSlide(buildSequence(slides), START_SLIDE_SRC);
 
 // --- timing & state ---
 const FADE = 300;
