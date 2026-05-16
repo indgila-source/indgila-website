@@ -322,7 +322,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
     /* Stack bio content vertically on mobile - everything left aligned */
     #aboutOverlay #bio,
-    #aboutOverlay .col-right{
+    #aboutOverlay .col-right,
+    #aboutOverlay .col-right-secondary{
       position: static; 
       top: auto; 
       left: auto;
@@ -340,7 +341,8 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay #bio{ 
       margin-bottom: 2em;
     }
-    #aboutOverlay .col-right{ 
+    #aboutOverlay .col-right,
+    #aboutOverlay .col-right-secondary{ 
       text-align: left;
     }
     
@@ -534,6 +536,59 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
   /* Keep caps */
   #aboutOverlay #bio .bio-text { text-transform: uppercase !important; }
 
+  @media (min-width: 1025px){
+    #aboutOverlay{
+      overflow: hidden;
+    }
+
+    #aboutOverlay #bio{
+      max-width: calc(100vw - (2 * var(--edge)) - 620px);
+    }
+
+    #aboutOverlay .bio-text{
+      max-width: 100%;
+    }
+
+    #aboutOverlay .col-right,
+    #aboutOverlay .col-right-secondary{
+      position: fixed;
+      top: calc(var(--edge) + var(--safe-top));
+      font-size: var(--ui);
+      line-height: 1.2;
+      letter-spacing: .01em;
+      font-family: "Pragmatica", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    #aboutOverlay .col-right{
+      left: var(--about-col-right-left, calc(var(--edge) + (100vw - (2 * var(--edge))) * 2 / 3));
+      right: auto;
+      transform: none;
+      width: 240px;
+      max-width: 240px;
+    }
+
+    #aboutOverlay .col-right-secondary{
+      right: var(--edge);
+      left: auto;
+      transform: none;
+      width: auto;
+      max-width: 240px;
+    }
+
+    #aboutOverlay .col-right h4:first-child,
+    #aboutOverlay .col-right-secondary h4:first-child{
+      margin-top: 0;
+    }
+
+    #aboutOverlay .col-right ul li,
+    #aboutOverlay .col-right-secondary ul li{
+      line-height: 1.2;
+      margin: 0;
+    }
+  }
+
   /* =========================
      MOBILE: ONE-COLUMN OVERLAY
      ========================= */
@@ -562,6 +617,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     #aboutOverlay #bio,
     #aboutOverlay .col-left,
     #aboutOverlay .col-right,
+    #aboutOverlay .col-right-secondary,
     #aboutOverlay .bottom-right,
     #aboutOverlay .mobile-blog,
     #aboutOverlay .mobile-email{
@@ -579,8 +635,10 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
     /* Comfortable text rhythm */
     #aboutOverlay .bio-text{ line-height:1.22; }
-    #aboutOverlay .col-right ul{ margin:8px 0 0; padding:0; }
-    #aboutOverlay .col-right li{ list-style:none; margin:2px 0; }
+    #aboutOverlay .col-right ul,
+    #aboutOverlay .col-right-secondary ul{ margin:8px 0 0; padding:0; }
+    #aboutOverlay .col-right li,
+    #aboutOverlay .col-right-secondary li{ list-style:none; margin:2px 0; }
     #aboutOverlay .bottom-right,
     #aboutOverlay .mobile-blog,
     #aboutOverlay .mobile-email{
@@ -689,7 +747,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
       <li>NICKELODEON</li>
       <li>OPENAI</li>
       <li>PEARSON</li>
-      <li>PORT MAGAZINE ISSUE 31</li>
+      <li>PORT MAGAZINE</li>
       <li>TINDER</li>
     </ul>
 
@@ -707,18 +765,35 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
 
     <h4>JURY:</h4>
     <ul class="publications-list">
-      <li><a href="https://adcawards.org/jury/presidents/" target="_blank" rel="noopener noreferrer">ADC AWARDS (NEW YORK)</a></li>
-      <li>ADC (RUSSIA)</li>
+      <li><a href="https://adcawards.org/jury/presidents/" target="_blank" rel="noopener noreferrer">ADC AWARDS (NEW YORK), 2026</a></li>
+      <li>ADC AWARDS (RUSSIA), 2021</li>
     </ul>
 
     <h4>AWARDS:</h4>
     <ul class="publications-list">
-      <li><a href="https://www.oneclub.org/awards/adcawards/-award/56914/openai-brand-film-sound/" target="_blank" rel="noopener noreferrer">ADC AWARDS</a></li>
-      <li><a href="https://www.commarts.com/project/38506/muse-group" target="_blank" rel="noopener noreferrer">COMMUNICATION ARTS</a></li>
-      <li><a href="https://www.dandad.org/work/d-ad-awards-archive/openai-brand-film" target="_blank" rel="noopener noreferrer">D&amp;AD AWARDS</a></li>
-      <li><a href="https://winners.effie.ru/2021/osnovnye-nominafii/tovary-i-uslugi/nko-blagotvoritel-nye-organizafii/pervoe-mobil-noe-prilozhenie-adresnoi-prozrachnoi-pomoshi" target="_blank" rel="noopener noreferrer">EFFIE AWARDS GOLD</a></li>
-      <li><a href="https://winners.effie.ru/2021/osnovnye-nominafii/tovary-i-uslugi/gran-pri-nko-blagotvoritel-nye-organizafii/pervoe-mobil-noe-prilozhenie-adresnoi-prozrachnoi-pomoshi" target="_blank" rel="noopener noreferrer">EFFIE AWARDS GRAND PRIX</a></li>
-      <li><a href="https://www.red-dot.org/zh/project/sngp-company-12484" target="_blank" rel="noopener noreferrer">RED DOT DESIGN AWARD(S)</a></li>
+      <li><a href="https://www.oneclub.org/awards/adcawards/-award/62325/muse-group/" target="_blank" rel="noopener noreferrer">ADC AWARDS, 2026</a></li>
+      <li><a href="https://www.commarts.com/project/38506/muse-group" target="_blank" rel="noopener noreferrer">COMMUNICATION ARTS, 2025</a></li>
+      <li><a href="https://www.oneclub.org/awards/adcawards/-award/56914/openai-brand-film-sound/" target="_blank" rel="noopener noreferrer">ADC AWARDS, 2025</a></li>
+      <li><a href="https://www.dandad.org/work/d-ad-awards-archive/openai-brand-film" target="_blank" rel="noopener noreferrer">D&amp;AD AWARDS, 2025</a></li>
+      <li><a href="https://winners.effie.ru/2021/osnovnye-nominafii/tovary-i-uslugi/nko-blagotvoritel-nye-organizafii/pervoe-mobil-noe-prilozhenie-adresnoi-prozrachnoi-pomoshi" target="_blank" rel="noopener noreferrer">EFFIE AWARDS (GOLD), 2021</a></li>
+      <li><a href="https://winners.effie.ru/2021/osnovnye-nominafii/tovary-i-uslugi/gran-pri-nko-blagotvoritel-nye-organizafii/pervoe-mobil-noe-prilozhenie-adresnoi-prozrachnoi-pomoshi" target="_blank" rel="noopener noreferrer">EFFIE AWARDS (GRAND PRIX), 2021</a></li>
+      <li><a href="https://www.red-dot.org/zh/project/sngp-company-12484" target="_blank" rel="noopener noreferrer">RED DOT DESIGN AWARDS, 2015</a></li>
+    </ul>
+  </div>
+  <div class="col-right-secondary">
+    <h4>EXHIBITIONS:</h4>
+    <ul class="publications-list">
+      <li>MUSEUM OF TRANSPORT<br>AND MOSCOW SUBWAY, 2021</li>
+      <li>SOLYANKA GALLERY, 2021</li>
+      <li>SOLYANKA VPA, 2019</li>
+      <li>GROUND GALLERY, 2018</li>
+      <li>MOSCOW INTERNATIONAL<br>HOUSE OF MUSIC, 2017</li>
+      <li>GOGOL'S HOUSE, 2016</li>
+      <li>VIENNACONTEMPORARY, 2016</li>
+      <li>CULTURE CENTER DOM, 2016</li>
+      <li>THE BALLERY, BERLIN, 2015</li>
+      <li>TYPOMANIA FESTIVAL, 2014</li>
+      <li>TYPOMANIA FESTIVAL, 2013</li>
     </ul>
   </div>
   <div class="bottom-left">INDGILA SAMAD ALI</div>
@@ -880,6 +955,7 @@ const videoEl  = document.getElementById('mp4');      // keep if already present
 const mp4src   = document.getElementById('mp4src');
 const navPrev  = document.getElementById('navPrev');
 const navNext  = document.getElementById('navNext');
+const aboutBlogEl = aboutOverlay?.querySelector('.bottom-blog');
 
 
 
@@ -1074,9 +1150,22 @@ navPrev.onmouseenter = navNext.onmouseenter = ()=>document.body.classList.add('c
 navPrev.onmouseleave = navNext.onmouseleave = ()=>{ document.body.classList.remove('cursor-hidden'); cursorArrow.style.opacity=0; };
 
 /* ---------- About overlay toggle ---------- */
+function syncAboutColumns(){
+  if (!aboutOverlay || !aboutBlogEl) return;
+  if (window.matchMedia('(max-width: 1024px)').matches) {
+    aboutOverlay.style.removeProperty('--about-col-right-left');
+    return;
+  }
+
+  const blogAnchor = aboutBlogEl.querySelector('a') || aboutBlogEl;
+  const { left: blogLeft } = blogAnchor.getBoundingClientRect();
+  aboutOverlay.style.setProperty('--about-col-right-left', `${Math.round(blogLeft)}px`);
+}
+
 function showAbout(){
   document.body.classList.remove('cursor-hidden');
   if (!IS_TOUCH){ cursorArrow.style.display = 'block'; cursorArrow.style.opacity = 1; }
+  syncAboutColumns();
   // Trigger fade-in
   requestAnimationFrame(() => {
     document.body.classList.add('show-about');
@@ -1173,7 +1262,11 @@ function applyRotateMedia(){
 
 // run once at startup, and again after resize/orientation change
 applyRotateMedia();
-window.addEventListener('resize', () => { setTimeout(applyRotateMedia, 150); }, { passive:true });
+syncAboutColumns();
+window.addEventListener('resize', () => {
+  syncAboutColumns();
+  setTimeout(applyRotateMedia, 150);
+}, { passive:true });
 window.addEventListener('orientationchange', () => { setTimeout(applyRotateMedia, 250); }, { passive:true });
 
 
