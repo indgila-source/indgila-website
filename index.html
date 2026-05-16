@@ -542,7 +542,7 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     }
 
     #aboutOverlay #bio{
-      max-width: calc(100vw - (2 * var(--edge)) - 620px);
+      max-width: 1200px;
     }
 
     #aboutOverlay .bio-text{
@@ -570,11 +570,14 @@ html, body, #stage, #mediaWrap { height:100%; overflow:hidden; }
     }
 
     #aboutOverlay .col-right-secondary{
-      right: var(--edge);
-      left: auto;
+      left: min(
+        calc(var(--about-col-right-left, calc(var(--edge) + (100vw - (2 * var(--edge))) * 2 / 3)) + 280px),
+        calc(100vw - var(--edge) - 300px)
+      );
+      right: auto;
       transform: none;
-      width: auto;
-      max-width: 240px;
+      width: 300px;
+      max-width: 300px;
     }
 
     #aboutOverlay .col-right h4:first-child,
