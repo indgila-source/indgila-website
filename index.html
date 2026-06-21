@@ -927,7 +927,34 @@ function pinStartSlide(sequence, preferredSrc){
   return [...sequence.slice(startIndex), ...sequence.slice(0, startIndex)];
 }
 
-let seq = pinStartSlide(buildSequence(slides), START_SLIDE_SRC);
+function smoothPinnedSequence(sequence){
+  const smoothed = [...sequence];
+
+  const moveNextImageTo = (targetIndex) => {
+    const nextImageIndex = smoothed.findIndex((slide, index) => (
+      index > targetIndex && slide.type === 'image'
+    ));
+    if (nextImageIndex === -1) return false;
+
+    const [nextImage] = smoothed.splice(nextImageIndex, 1);
+    smoothed.splice(targetIndex, 0, nextImage);
+    return true;
+  };
+
+  if (smoothed[0]?.type === 'image' && smoothed[1]?.type === 'mp4') {
+    moveNextImageTo(1);
+  }
+
+  for (let index = 1; index < smoothed.length; index += 1) {
+    if (smoothed[index - 1]?.type === 'mp4' && smoothed[index]?.type === 'mp4') {
+      moveNextImageTo(index);
+    }
+  }
+
+  return smoothed;
+}
+
+let seq = smoothPinnedSequence(pinStartSlide(buildSequence(slides), START_SLIDE_SRC));
 
 // --- timing & state ---
 const FADE = 300;
